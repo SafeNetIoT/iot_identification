@@ -82,13 +82,17 @@ class FeatureValidator:
         corr = np.corrcoef(x[mask], y[mask])[0, 1]
         return corr
 
-    def correlate_all(self):
-        for feature1 in self.features:
-            for feature2 in self.features:
+    def correlate_all(self, feature_set):
+        all_correlations = []
+        for feature1 in feature_set:
+            for feature2 in feature_set:
                 if feature1 == feature2:
                     continue
                 corr = self.find_correlation(feature1, feature2)
-                print(corr, feature1, feature2)
+                if corr < 0.9:
+                    continue
+                all_correlations.append((corr, feature1, feature2))
+        return all_correlations
 
 def main():
     validator = FeatureValidator()
@@ -110,8 +114,10 @@ def main():
             if correlation >= 0.9:
                 valid_features.remove(feature_group[i])
 
-    print(len(valid_features))
-    print(valid_features)
+    # find all remaining correlations
+    all_correlations = validator.correlate_all(valid_features)
+    for row in all_correlations:
+        print(row)
 
 if __name__ == "__main__":
     main()
