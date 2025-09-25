@@ -2,3 +2,4 @@ requests
 pandas
 scapy
 matplotlib
+PyYAML
