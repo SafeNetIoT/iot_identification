@@ -4,12 +4,12 @@ import os
 from statistics import mean
 import numpy as np
 from utils import unpack_feature_groups
-from config import DATA_DIRECTORY
+from config import PREPROCESSED_DATA_DIRECTORY
 import collections
 
 class FeatureValidator:
     def __init__(self) -> None:
-        self.processed_data_directory = DATA_DIRECTORY
+        self.processed_data_directory = PREPROCESSED_DATA_DIRECTORY
         self.plot_data = collections.defaultdict(dict) # feature : [{device: val}]
         self.populate_plot_data()
 
@@ -72,6 +72,9 @@ class FeatureValidator:
         x = np.array(var1, dtype=float)
         y = np.array(var2, dtype=float)
 
+        if len(x) == 0 or len(y) == 0:
+            return 0
+
         mask = ~np.isnan(x) & ~np.isnan(y)
         if mask.sum() < 2:
             return float('nan')
@@ -101,10 +104,13 @@ def main():
     feature_groups = unpack_feature_groups()
     for feature_group in feature_groups:
         for i in range(1, len(feature_group)):
+            if feature_group[i] not in valid_features:
+                continue
             correlation = validator.find_correlation(feature_group[i - 1], feature_group[i])
-            if correlation >= 0.9 and feature_group[i] in valid_features:
+            if correlation >= 0.9:
                 valid_features.remove(feature_group[i])
 
+    print(len(valid_features))
     print(valid_features)
 
 if __name__ == "__main__":
