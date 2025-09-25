@@ -1,5 +1,6 @@
 {
-    "data_directory":"src/data",
+    "preprocessed_data_directory":"data/preprocessed",
+    "raw_data_directory": "data/raw",
     "valid_features_directory":"src/identification/features.txt",
-    "feature_menu":"src/data/identification/feature_menu.yml"
+    "feature_menu_path":"src/identification/feature_menu.yml"
 }

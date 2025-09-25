@@ -7,3 +7,5 @@ def load_config(path: str = "config.json") -> dict:
 
 CONFIG = load_config()
 FEATURE_MENU_PATH = CONFIG["feature_menu_path"]
+RAW_DATA_DIRECTORY = CONFIG['raw_data_directory']
+PREPROCESSED_DATA_DIRECTORY = CONFIG['preprocessed_data_directory']
