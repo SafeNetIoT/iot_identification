@@ -10,23 +10,23 @@ Feature: bytes_fwd, bytes_bwd, bytes_tot
   Meaning: Byte counts by direction/total
   Unit/Notes: bytes
 
-Feature: pktlen_fwd_min/mean/max/std
+Feature: pktlen_fwd_min, pktlen_fwd_mean, pktlen_fwd_max, pktlen_fwd_std
   Meaning: Packet length stats (forward)
   Unit/Notes: bytes
 
-Feature: pktlen_bwd_min/mean/max/std
+Feature: pktlen_bwd_min, pktlen_bwd_mean, pktlen_bwd_max, pktlen_bwd_std
   Meaning: Packet length stats (backward)
   Unit/Notes: bytes
 
-Feature: iat_fwd_min/mean/max/std
+Feature: iat_fwd, iat_fwd_mean, iat_fwd_max, iat_fwd_std
   Meaning: Inter-arrival gaps within forward direction
   Unit/Notes: seconds
 
-Feature: iat_bwd_min/mean/max/std
+Feature: iat_bwd, iat_bwd_mean, iat_bwd_max, iat_bwd_std
   Meaning: Inter-arrival gaps within backward direction
   Unit/Notes: seconds
 
-Feature: iat_tot_mean/std
+Feature: iat_tot_mean, iat_tot_std
   Meaning: Inter-arrival gaps across all packets
   Unit/Notes: seconds
 
