@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from statistics import mean
 import numpy as np
+from utils import unpack_feature_groups
 
 
 class FeatureValidator:
@@ -91,6 +92,24 @@ class FeatureValidator:
                     continue
                 corr = self.find_correlation(feature1, feature2)
                 print(corr, feature1, feature2)
+
+def main():
+    validator = FeatureValidator()
+    valid_features = set()
+
+    # find stability of each feature
+    feature_scores = validator.check_feature_stability()
+    for feature, score in feature_scores.items():
+        if score > 0.05:
+            valid_features.add(feature)
+
+    # find correlated features in groups
+    feature_groups = unpack_feature_groups()
+    for feature_group in feature_groups:
+        for i in range(1, len(feature_group)):
+            correlation = val.find_correlation(feature_group[i - 1], feature_group[i])
+            if correlation >= 0.9 and feature_group[i] in valid_features:
+                valid_features.remove(feature_group[i])
 
 if __name__ == "__main__":
     val = FeatureValidator()
