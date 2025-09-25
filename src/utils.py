@@ -1,8 +1,9 @@
 import json
+from config import FEATURE_MENU_PATH
 
-def unpack_feature_groups(feature_menu_path):
+def unpack_feature_groups():
     feature_groups = []
-    with open(feature_menu_path, "r") as f:
+    with open(FEATURE_MENU_PATH, "r") as f:
         for line in f:
             if line.strip().startswith("Feature:"):
                 features_str = line.split("Feature:")[1].strip()
