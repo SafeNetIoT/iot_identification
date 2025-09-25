@@ -11,6 +11,7 @@ import ipaddress
 import math
 import os
 from pathlib import Path
+from config import RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY
 
 from scapy.all import PcapReader
 from scapy.layers.inet import IP, TCP, UDP
@@ -458,10 +459,12 @@ def run(input_pcap: str, output_csv: str): # Streaming
 
 
 def main():
-    for device in os.listdir("data/dns_only"):
-        data_dir = Path(f"data/dns_only/{device}")
+    os.makedirs(PREPROCESSED_DATA_DIRECTORY)
+    for device in os.listdir(RAW_DATA_DIRECTORY):
+        data_dir = Path(f"{RAW_DATA_DIRECTORY}/{device}")
         for pcap_path in data_dir.rglob("*.pcap"): 
-            run(str(pcap_path), f"src/data/{device}.csv")
+            run(str(pcap_path), f"{PREPROCESSED_DATA_DIRECTORY}/{device}.csv")
 
 if __name__ == "__main__":
+    print('running...')
     main()
