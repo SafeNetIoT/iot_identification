@@ -4,17 +4,13 @@ import os
 from statistics import mean
 import numpy as np
 from utils import unpack_feature_groups
-
+from config import DATA_DIRECTORY
+import collections
 
 class FeatureValidator:
     def __init__(self) -> None:
-        self.data_directory = "src/data"
-        feature_file_path = "src/identification/features.txt"
-
-        with open(feature_file_path, 'r') as file:
-            self.features = [line.strip() for line in file]
-
-        self.plot_data = {feature:{} for feature in self.features} # feature : [{device: val}]
+        self.processed_data_directory = DATA_DIRECTORY
+        self.plot_data = collections.defaultdict(dict) # feature : [{device: val}]
         self.populate_plot_data()
 
     def check_variance(self):
@@ -43,15 +39,13 @@ class FeatureValidator:
         return feature_scores
 
     def populate_plot_data(self):
-        for file in os.listdir(self.data_directory):
-            df = pd.read_csv(f"{self.data_directory}/{file}")
+        for file in os.listdir(self.processed_data_directory):
+            df = pd.read_csv(f"{self.processed_data_directory}/{file}")
             device_name = file.split(".csv")[0]
             for column in df.columns:
                 df[column] = pd.to_numeric(df[column], errors="coerce")
                 all_numeric = df[column].notna().all()
                 if all_numeric:
-                    if column not in self.plot_data:
-                        self.plot_data[column] = {}  # initialize once
                     self.plot_data[column][device_name] = mean(df[column].tolist())
     
     def plot_values(self):
@@ -107,13 +101,14 @@ def main():
     feature_groups = unpack_feature_groups()
     for feature_group in feature_groups:
         for i in range(1, len(feature_group)):
-            correlation = val.find_correlation(feature_group[i - 1], feature_group[i])
+            correlation = validator.find_correlation(feature_group[i - 1], feature_group[i])
             if correlation >= 0.9 and feature_group[i] in valid_features:
                 valid_features.remove(feature_group[i])
 
+    print(valid_features)
+
 if __name__ == "__main__":
-    val = FeatureValidator()
-    val.correlate_all()
+    main()
 
 
 
