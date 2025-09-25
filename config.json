@@ -1,0 +1,5 @@
+{
+    "data_directory":"src/data",
+    "valid_features_directory":"src/identification/features.txt",
+    "feature_menu":"src/data/identification/feature_menu.yml"
+}
