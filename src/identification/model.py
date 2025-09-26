@@ -7,7 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 from config import PREPROCESSED_DATA_DIRECTORY, VALID_FEATURES_DIRECTORY, MODELS_DIRECTORY
-import datetime
+from datetime import datetime
+
 
 class DatasetPreparation:
     def __init__(self) -> None:
@@ -97,10 +98,6 @@ class DatasetPreparation:
         self.X_test = pd.DataFrame(self.scaler.transform(self.X_test), columns=X.columns)
 
         print(f"Train set: {self.X_train.shape}, Test set: {self.X_test.shape}")
-
-        os.makedirs(f"{self.output_directory}")
-        self.X_test.to_csv(f"{self.output_directory}/independent.csv")
-        self.y_test.to_csv(f"{self.output_directory}/dependent.csv")
         return self.X_train, self.X_test, self.y_train, self.y_test
 
 class Model:
@@ -120,23 +117,37 @@ class Model:
     def evaluate(self, X_test, y_test):
         y_pred = self.model.predict(X_test)
 
-        acc = accuracy_score(y_test, y_pred)
-        print(f"Accuracy: {acc:.4f}")
+        self.acc = accuracy_score(y_test, y_pred)
+        print(f"Accuracy: {self.acc:.4f}")
 
+        self.report = classification_report(y_test, y_pred)
         print("\nClassification Report:")
-        print(classification_report(y_test, y_pred))
+        print(self.report)
 
+        self.confusion_matrix = confusion_matrix(y_test, y_pred)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
-
-        return acc
+        print(self.confusion_matrix)
 
     def predict(self, X):
         return self.model.predict(X)
 
-    def save(self, output_path):
-        joblib.dump(self.model, output_path)
-        print(f"Model saved to {output_path}")
+    def save(self, x_test, y_test):
+        current_date = datetime.today().strftime('%Y-%m-%d')
+        current_directory = f"{self.output_directory}/{current_date}"
+        os.makedirs(current_directory, exist_ok=True)
+        model_ref = str(len(os.listdir(current_directory)))
+        if model_ref == '0': 
+            model_ref = ''
+        current_model_dir = f"{current_directory}/random_forest{model_ref}"
+        os.makedirs(current_model_dir)
+        joblib.dump(self.model, f"{current_model_dir}/random_forest.pkl")
+        x_test.to_csv(f"{current_model_dir}/input.csv")
+        y_test.to_csv(f"{current_model_dir}/output.csv")
+        with open(f"{current_model_dir}/evalutation.txt", 'w') as file:
+            file.write(f"accuracy: {self.acc}\n")
+            file.write(f"report:\n{self.report}\n")
+            file.write(f"confusion_matrix:\n{self.confusion_matrix}")
+        print(f"Model saved to {current_model_dir}")
 
     def load(self, path):
         self.model = joblib.load(path)
@@ -150,7 +161,7 @@ def main():
     clf = Model()
     clf.train(X_train_bal, y_train_bal)
     clf.evaluate(X_test, y_test)
-    clf.save(f"{MODELS_DIRECTORY}/rf_model_{datetime.date()}.pkl")
+    clf.save(X_test, y_test)
 
 if __name__ == "__main__":
     main()
