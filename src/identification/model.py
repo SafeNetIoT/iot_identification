@@ -23,7 +23,6 @@ class DatasetPreparation:
         self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
         self.test_size = 0.2
 
-
     def prune_features(self, device_name, device_csv):
         feature_set = set(self.features)
         device = pd.read_csv(f"{self.preprocessed_data_directory}/{device_csv}")
@@ -88,7 +87,6 @@ class DatasetPreparation:
         X = self.output.drop(columns=["label"])
         y = self.output["label"]
 
-        # Train/test split
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
         )
@@ -101,37 +99,35 @@ class DatasetPreparation:
         return self.X_train, self.X_test, self.y_train, self.y_test
 
 class Model:
-    def __init__(self, n_estimators=100, max_depth=None, random_state=42):
+    def __init__(self, X_train, X_test, y_train, y_test):
         self.model = RandomForestClassifier(
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            random_state=random_state,
+            n_estimators=100,
+            max_depth=None,
+            random_state=42,
             n_jobs=-1  # use all cores
         )
         self.output_directory = MODELS_DIRECTORY
+        self.X_train, self.y_train, self.X_test, self.y_test = X_train, y_train, X_test, y_test
 
-    def train(self, X_train, y_train):
-        self.model.fit(X_train, y_train)
+    def train(self):
+        self.model.fit(self.X_train, self.y_train)
         return self.model
 
-    def evaluate(self, X_test, y_test):
-        y_pred = self.model.predict(X_test)
+    def evaluate(self):
+        y_pred = self.model.predict(self.X_test)
 
-        self.acc = accuracy_score(y_test, y_pred)
+        self.acc = accuracy_score(self.y_test, y_pred)
         print(f"Accuracy: {self.acc:.4f}")
 
-        self.report = classification_report(y_test, y_pred)
+        self.report = classification_report(self.y_test, y_pred)
         print("\nClassification Report:")
         print(self.report)
 
-        self.confusion_matrix = confusion_matrix(y_test, y_pred)
+        self.confusion_matrix = confusion_matrix(self.y_test, y_pred)
         print("Confusion Matrix:")
         print(self.confusion_matrix)
 
-    def predict(self, X):
-        return self.model.predict(X)
-
-    def save(self, x_test, y_test):
+    def save(self):
         current_date = datetime.today().strftime('%Y-%m-%d')
         current_directory = f"{self.output_directory}/{current_date}"
         os.makedirs(current_directory, exist_ok=True)
@@ -141,27 +137,22 @@ class Model:
         current_model_dir = f"{current_directory}/random_forest{model_ref}"
         os.makedirs(current_model_dir)
         joblib.dump(self.model, f"{current_model_dir}/random_forest.pkl")
-        x_test.to_csv(f"{current_model_dir}/input.csv")
-        y_test.to_csv(f"{current_model_dir}/output.csv")
+        self.X_test.to_csv(f"{current_model_dir}/input.csv")
+        self.y_test.to_csv(f"{current_model_dir}/output.csv")
         with open(f"{current_model_dir}/evalutation.txt", 'w') as file:
             file.write(f"accuracy: {self.acc}\n")
             file.write(f"report:\n{self.report}\n")
             file.write(f"confusion_matrix:\n{self.confusion_matrix}")
         print(f"Model saved to {current_model_dir}")
 
-    def load(self, path):
-        self.model = joblib.load(path)
-        print(f"Model loaded from {path}")
-        return self.model
-
 def main():
     prep = DatasetPreparation()
-    X_train, X_test, y_train, y_test = prep.preprocess()
+    _, X_test, _, y_test = prep.preprocess()
     X_train_bal, y_train_bal = prep.balance_dataset()
-    clf = Model()
-    clf.train(X_train_bal, y_train_bal)
-    clf.evaluate(X_test, y_test)
-    clf.save(X_test, y_test)
+    clf = Model(X_train=X_train_bal, y_train=y_train_bal, X_test=X_test, y_test=y_test)
+    clf.train()
+    clf.evaluate()
+    clf.save()
 
 if __name__ == "__main__":
     main()
