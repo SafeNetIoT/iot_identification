@@ -3,5 +3,5 @@
     "raw_data_directory": "data/raw",
     "valid_features_directory":"src/identification/features.txt",
     "feature_menu_path":"src/identification/feature_menu.yml",
-    "model_directory":"models"
+    "models_directory":"models"
 }

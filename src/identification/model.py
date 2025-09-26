@@ -70,15 +70,15 @@ class DatasetPreparation:
         ros = RandomOverSampler(random_state=42)
         X_resampled, y_resampled = ros.fit_resample(self.X_train, self.y_train)
 
-        print("Before balancing:", self.y_train.value_counts().to_dict())
-        print("After balancing:", pd.Series(y_resampled).value_counts().to_dict())
+        # print("Before balancing:", self.y_train.value_counts().to_dict())
+        # print("After balancing:", pd.Series(y_resampled).value_counts().to_dict())
 
         self.X_train, self.y_train = X_resampled, y_resampled
         return self.X_train, self.y_train      
 
     def preprocess(self):
         all_devices = []
-        for device_directory in os.listdir(self.data_directory):
+        for device_directory in os.listdir(self.preprocessed_data_directory):
             device_name = device_directory.split(".csv")[0]
             device_df = self.prune_features(device_name, device_directory)
             all_devices.append(device_df)
@@ -134,9 +134,9 @@ class Model:
     def predict(self, X):
         return self.model.predict(X)
 
-    def save(self):
-        joblib.dump(self.model, self.output_directory)
-        print(f"Model saved to {self.output_directory}")
+    def save(self, output_path):
+        joblib.dump(self.model, output_path)
+        print(f"Model saved to {output_path}")
 
     def load(self, path):
         self.model = joblib.load(path)
@@ -150,7 +150,7 @@ def main():
     clf = Model()
     clf.train(X_train_bal, y_train_bal)
     clf.evaluate(X_test, y_test)
-    clf.save(f"rf_model_{datetime.date()}.pkl")
+    clf.save(f"{MODELS_DIRECTORY}/rf_model_{datetime.date()}.pkl")
 
 if __name__ == "__main__":
     main()
