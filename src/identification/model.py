@@ -148,7 +148,7 @@ class Model:
         self.y_test.to_csv(f"{current_model_dir}/output.csv")
         with open(f"{current_model_dir}/evalutation.txt", 'w') as file:
             file.write(f"train accuracy: {self.train_acc}\n")
-            file.write(f"train accuracy: {self.test_acc}\n")
+            file.write(f"test accuracy: {self.test_acc}\n")
             file.write(f"report:\n{self.report}\n")
             file.write(f"confusion_matrix:\n{self.confusion_matrix}")
         print(f"Model saved to {current_model_dir}")
