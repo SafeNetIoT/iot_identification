@@ -114,17 +114,24 @@ class Model:
         return self.model
 
     def evaluate(self):
-        y_pred = self.model.predict(self.X_test)
+        # Training accuracy
+        y_train_pred = self.model.predict(self.X_train)
+        self.train_acc = accuracy_score(self.y_train, y_train_pred)
+        print(f"Train Accuracy: {self.train_acc:.4f}")
 
-        self.acc = accuracy_score(self.y_test, y_pred)
-        print(f"Accuracy: {self.acc:.4f}")
+        # Validation/Test accuracy 
+        y_test_pred = self.model.predict(self.X_test)
+        self.test_acc = accuracy_score(self.y_test, y_test_pred)
+        print(f"Validation/Test Accuracy: {self.test_acc:.4f}")
 
-        self.report = classification_report(self.y_test, y_pred)
-        print("\nClassification Report:")
+        # report
+        self.report = classification_report(self.y_test, y_test_pred)
+        print("\nClassification Report (Test):")
         print(self.report)
 
-        self.confusion_matrix = confusion_matrix(self.y_test, y_pred)
-        print("Confusion Matrix:")
+        # confusion matrix
+        self.confusion_matrix = confusion_matrix(self.y_test, y_test_pred)
+        print("Confusion Matrix (Test):")
         print(self.confusion_matrix)
 
     def save(self):
@@ -140,7 +147,8 @@ class Model:
         self.X_test.to_csv(f"{current_model_dir}/input.csv")
         self.y_test.to_csv(f"{current_model_dir}/output.csv")
         with open(f"{current_model_dir}/evalutation.txt", 'w') as file:
-            file.write(f"accuracy: {self.acc}\n")
+            file.write(f"train accuracy: {self.train_acc}\n")
+            file.write(f"train accuracy: {self.test_acc}\n")
             file.write(f"report:\n{self.report}\n")
             file.write(f"confusion_matrix:\n{self.confusion_matrix}")
         print(f"Model saved to {current_model_dir}")
