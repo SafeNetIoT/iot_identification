@@ -3,5 +3,6 @@
     "raw_data_directory": "data/raw",
     "valid_features_directory":"src/identification/features.txt",
     "feature_menu_path":"src/identification/feature_menu.yml",
-    "models_directory":"models"
+    "models_directory":"models",
+    "time_intervals": [10, 20, 30, 45, 60, 75, 90, 105]
 }
