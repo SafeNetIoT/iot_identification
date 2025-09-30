@@ -12,8 +12,7 @@ class TestPipeline:
         self.collection_times = TIME_INTERVALS
         self.prep = DatasetPreparation()
 
-    @staticmethod
-    def extract(input_pcap: str, time_interval: float = None) -> pd.DataFrame:
+    def extract(self, input_pcap: str, time_interval: float = None) -> pd.DataFrame:
         flows: dict[tuple, FlowState] = {}
         buffer = []
         pkt_count = 0
@@ -95,8 +94,14 @@ class TestPipeline:
                 for date in os.listdir(f"{RAW_DATA_DIRECTORY}/{device}"):
                     for pcap_file in os.listdir(f"{RAW_DATA_DIRECTORY}/{device}/{date}"):
                         pcap_df = self.extract(f"{RAW_DATA_DIRECTORY}/{device}/{date}/{pcap_file}", collection_time)
-                        device_df = self.prep.prune_features()
+                        if pcap_df.empty:
+                            continue
+                        keep_cols = [col for col in pcap_df.columns if col in self.prep.feature_set]
+                        pcap_df = pcap_df[keep_cols].copy()
+                        pcap_df.loc[:, 'label'] = device 
                         all_dfs.append(pcap_df)
+                        if pcap_df.empty:
+                            print("EMPTY")
             self.prep.output = pd.concat(all_dfs, ignore_index=True)
             x_train, y_train, x_test, y_test = self.split_and_scale()
             clf = Model(x_train, y_train, x_test, y_test)
@@ -109,4 +114,6 @@ def main():
     pipeline.test_intervals()
 
 if __name__ == "__main__":
+    # pipeline = TestPipeline()
+    # print(pipeline.extract("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap", 30))
     main()
