@@ -12,7 +12,7 @@ from scapy.layers.inet6 import IPv6
 from scapy.layers.l2 import Ether
 from scapy.packet import Raw
 from src.utils import is_internal, is_multicast_ip, port_bucket, iot_service_id, discovery_proto_id, five_tuple, canonize, flatten
-from src.identification.flow_structs import *
+from identification.features.flow_structs import *
 
 class OnlineStats:
     __slots__ = ("n","mean","M2","min","max")
