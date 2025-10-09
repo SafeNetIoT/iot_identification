@@ -45,13 +45,3 @@ class DatasetPreparation:
 
         print("Cleanup complete. Shape:", df.shape)
         return df
-
-    def combine_csvs(self):      
-        all_devices = []
-        for device_csv in os.listdir(self.preprocessed_data_directory):
-            device_df = pd.read_csv(f"{self.preprocessed_data_directory}/{device_csv}")
-            device_name = device_csv.split(".csv")[0]
-            device_df = self.label_device(self.prune_features(device_df), device_name)
-            device_df = self.clean_up(device_df)
-            all_devices.append(device_df)
-        return pd.concat(all_devices, ignore_index=True)
