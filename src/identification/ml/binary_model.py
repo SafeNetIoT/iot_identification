@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 
-from src.identification.dataset_preparation import DatasetPreparation
+from identification.ml.dataset_preparation import DatasetPreparation
 from config import PREPROCESSED_DATA_DIRECTORY, MODELS_DIRECTORY
 
 
