@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.model_selection import RandomizedSearchCV
 from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
+from imblearn.over_sampling import RandomOverSampler
 
 
 class BaseModel:
@@ -44,7 +45,23 @@ class BaseModel:
         self.X_train = pd.DataFrame(self.scaler.fit_transform(self.X_train), columns=self.X_train.columns)
         self.X_test = pd.DataFrame(self.scaler.transform(self.X_test), columns=self.X_test.columns)
 
+    def balance_dataset(self, verbose = False):
+        if self.X_train is None or self.y_train is None:
+            raise ValueError("Run preprocess() before balancing.")
+
+        ros = RandomOverSampler(random_state=42)
+        X_resampled, y_resampled = ros.fit_resample(self.X_train, self.y_train)
+
+        if verbose:
+            print("Before balancing:", self.y_train.value_counts().to_dict())
+            print("After balancing:", pd.Series(y_resampled).value_counts().to_dict())
+
+        self.X_train, self.y_train = X_resampled, y_resampled
+        return self.X_train, self.y_train
+
     def train(self):
+        self.split()
+        self.scale()
         self.model.fit(self.X_train, self.y_train)
         return self.model
 
