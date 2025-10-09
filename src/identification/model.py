@@ -18,18 +18,16 @@ class DatasetPreparation:
         feature_dir = VALID_FEATURES_DIRECTORY
         with open(feature_dir, 'r') as file:
             self.features = [line.strip() for line in file]
-
+        self.feature_set = set(self.features)
         self.output = pd.DataFrame(columns=self.features + ['label'])
         self.output_directory = MODELS_DIRECTORY
         self.random_state = 42
         self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
         self.test_size = 0.2
 
-    def prune_features(self, device_name, device_csv):
-        feature_set = set(self.features)
-        device = pd.read_csv(f"{self.preprocessed_data_directory}/{device_csv}")
-        keep_cols = [col for col in device.columns if col in feature_set]
-        device = device[keep_cols]
+    def prune_features(self, device_df, device_name):
+        keep_cols = [col for col in device_df.columns if col in self.feature_set]
+        device = device_df[keep_cols].copy()
         device.loc[:, 'label'] = device_name
         return device
 
@@ -76,15 +74,19 @@ class DatasetPreparation:
         # print("After balancing:", pd.Series(y_resampled).value_counts().to_dict())
 
         self.X_train, self.y_train = X_resampled, y_resampled
-        return self.X_train, self.y_train      
+        return self.X_train, self.y_train
 
-    def preprocess(self):
+    def combine_csvs(self):      
         all_devices = []
-        for device_directory in os.listdir(self.preprocessed_data_directory):
-            device_name = device_directory.split(".csv")[0]
-            device_df = self.prune_features(device_name, device_directory)
+        for device_csv in os.listdir(self.preprocessed_data_directory):
+            device_df = pd.read_csv(f"{self.preprocessed_data_directory}/{device_csv}")
+            device_name = device_csv.split(".csv")[0]
+            device_df = self.prune_features(device_df, device_name)
             all_devices.append(device_df)
         self.output = pd.concat(all_devices, ignore_index=True)
+
+    def preprocess(self):
+        self.combine_csvs()
         self.clean_up()
         X = self.output.drop(columns=["label"])
         y = self.output["label"]
@@ -192,7 +194,7 @@ def main():
     _, X_test, _, y_test = prep.preprocess()
     X_train_bal, y_train_bal = prep.balance_dataset()
     clf = Model(X_train=X_train_bal, y_train=y_train_bal, X_test=X_test, y_test=y_test)
-    clf.tune(3, 3)
+    # clf.tune(3, 3)
     clf.train()
     clf.evaluate()
     clf.save()

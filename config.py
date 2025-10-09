@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import ipaddress
 
 def load_config(path: str = "config.json") -> dict:
     with open(path, "r") as file:
@@ -11,3 +12,11 @@ RAW_DATA_DIRECTORY = CONFIG['raw_data_directory']
 PREPROCESSED_DATA_DIRECTORY = CONFIG['preprocessed_data_directory']
 VALID_FEATURES_DIRECTORY = CONFIG['valid_features_directory']
 MODELS_DIRECTORY = CONFIG['models_directory']
+TIME_INTERVALS = CONFIG['time_intervals']
+INTERNAL_NETS = [ipaddress.ip_network(ip) for ip in CONFIG['internal_nets']]
+TCP_IDLE_S = CONFIG['tcp_idle_s']
+UDP_IDLE_S = CONFIG['udp_idle_s']
+MAX_AGE_S = CONFIG['max_age_s']
+K_PAYLOAD_BYTES = CONFIG['k_payload_bytes']
+BATCH_ROWS = CONFIG['batch_rows']
+SWEEP_EVERY_PKTS = CONFIG['sweep_every_pkts']
