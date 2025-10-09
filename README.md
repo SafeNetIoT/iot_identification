@@ -11,7 +11,8 @@
 ## Project Overview
 The aim of this project is to develop a machine learning model to identify an IoT device based on DNS logs from a Wi-Fi access point.  
 
-The current implementation uses a **Random Forest classifier**, achieving an accuracy of **97%**.
+The repository proposes 2 mathematically equivalent **Random Forest classifiers**, achieving an accuracy of **97%**.
+The first proposal is multi class random forest classifier, whereas the second implementation is an array of binary random forest classifiers. The purpose of the second model is to simplify adding classes to the model without retrainining the entire model. 
 
 ---
 
@@ -22,14 +23,22 @@ iot_identification/
 │   └── raw/ 
 ├── docs/
 │   ├── feature_engineering.md
-│   └── overfitting.md
+│   ├── overfitting.md
+│   └── time_collection.md
 ├── src/
 │   ├── identification/
-│   │   ├── feature_extraction.py
-│   │   ├── feature_menu.yml
-│   │   ├── feature_validation.py
-│   │   ├── features.txt
-│   │   └── model.py
+│   │   ├── features/
+│   │   │   ├── feature_extraction.py
+│   │   │   ├── feature_menu.yml
+│   │   │   ├── feature_validation.py
+│   │   │   ├── features.txt
+│   │   │   ├── flow_state.py
+│   │   │   ├── flow_structs.py
+│   │   │   └── stats.py
+│   │   ├── binary_model.py
+│   │   ├── collection_time_analysis.py
+│   │   ├── dataset_preparation.py
+│   │   └── multi_class_model.py
 │   ├── lookup/
 │   │   ├── lookup_results.csv
 │   │   └── mac_lookup.py
@@ -97,4 +106,4 @@ python src/identification/model.py
 
 ## Limitations and Further Research
 - Potential **overfitting** in certain cases.  
-- Future work: improve feature selection, experiment with deep learning approaches, expand dataset diversity.  
+- DATA DRIFT

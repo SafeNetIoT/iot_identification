@@ -11,11 +11,6 @@ class DatasetPreparation:
             self.features = [line.strip() for line in file]
         self.feature_set = set(self.features)
         self.output = pd.DataFrame(columns=self.features + ['label'])
-        self.device_map = {} # device_name: df
-        self.output_directory = MODELS_DIRECTORY
-        self.random_state = 42
-        self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
-        self.test_size = 0.2
 
     def prune_features(self, device_df):
         keep_cols = [col for col in device_df.columns if col in self.feature_set]
@@ -58,6 +53,5 @@ class DatasetPreparation:
             device_name = device_csv.split(".csv")[0]
             device_df = self.label_device(self.prune_features(device_df), device_name)
             device_df = self.clean_up(device_df)
-            self.device_map[device_name] = device_df
             all_devices.append(device_df)
-        self.output = pd.concat(all_devices, ignore_index=True)
+        return pd.concat(all_devices, ignore_index=True)

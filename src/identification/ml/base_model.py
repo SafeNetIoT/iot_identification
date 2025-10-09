@@ -60,8 +60,6 @@ class BaseModel:
         return self.X_train, self.y_train
 
     def train(self):
-        self.split()
-        self.scale()
         self.model.fit(self.X_train, self.y_train)
         return self.model
 
@@ -95,18 +93,13 @@ class BaseModel:
         return self.model
 
     def evaluate(self, verbose = True):
-        # Training accuracy
         y_train_pred = self.model.predict(self.X_train)
         self.train_acc = accuracy_score(self.y_train, y_train_pred)
 
-        # Validation/Test accuracy 
         y_test_pred = self.model.predict(self.X_test)
         self.test_acc = accuracy_score(self.y_test, y_test_pred)
 
-        # report
         self.report = classification_report(self.y_test, y_test_pred)
-
-        # confusion matrix
         self.confusion_matrix = confusion_matrix(self.y_test, y_test_pred)
 
         if verbose:
