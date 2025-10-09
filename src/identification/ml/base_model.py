@@ -9,20 +9,18 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from sklearn.model_selection import RandomizedSearchCV
 from scipy.stats import randint
+from sklearn.ensemble import RandomForestClassifier
 
 
 class BaseModel:
     def __init__(self, architecture, input_data, name, test_size = 0.2) -> None:
         self.name = name
         self.output_directory = MODELS_DIRECTORY
-        self.model = architecture
+        self.model = RandomForestClassifier(**architecture)
         self.data = input_data
-        self.train_acc = None
-        self.test_acc = None
-        self.report = None
-        self.confusion_matrix = None
-        self.cv_results = None
+        self.train_acc, self.test_acc, self.report, self.confusion_matrix = None, None, None, None
         self.X_train, self.y_train, self.X_test, self.y_test = None, None, None, None
+        self.cv_results = None
         self.test_size = test_size
         self.random_state = RANDOM_STATE
         self._verify_schema()
@@ -33,7 +31,7 @@ class BaseModel:
         if self.data.columns != feature_columns:
             raise ValueError("Input data schema does not match the requirements")
 
-    def split_and_scale(self):
+    def split(self):
         X = self.data.drop(columns=["label"])
         y = self.data["label"]
 
@@ -93,7 +91,7 @@ class BaseModel:
 
         # confusion matrix
         self.confusion_matrix = confusion_matrix(self.y_test, y_test_pred)
-        
+
         if verbose:
             print(f"Train Accuracy: {self.train_acc:.4f}")
             print(f"Validation/Test Accuracy: {self.test_acc:.4f}")
