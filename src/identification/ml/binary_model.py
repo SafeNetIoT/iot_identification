@@ -1,19 +1,10 @@
 import os
 import pandas as pd
-from datetime import datetime
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import joblib
-
-from identification.ml.dataset_preparation import DatasetPreparation
-from src.identification.ml.base_model import BaseModel
-from config import PREPROCESSED_DATA_DIRECTORY, MODEL_ARCHITECTURES
-
+from config import PREPROCESSED_DATA_DIRECTORY
 import pandas as pd
 import os
 from src.identification.ml.model_manager import Manager
-from config import PREPROCESSED_DATA_DIRECTORY
+from src.identification.ml.model_record import ModelRecord
 
 
 class BinaryModel(Manager):
@@ -21,11 +12,7 @@ class BinaryModel(Manager):
 
     def __init__(self, architecture_name="standard_forest"):
         super().__init__(architecture_name)
-        self.device_csvs = [
-            f.replace(".csv", "")
-            for f in os.listdir(PREPROCESSED_DATA_DIRECTORY)
-            if f.endswith(".csv")
-        ]
+        self.device_csvs = [f.replace(".csv", "") for f in os.listdir(PREPROCESSED_DATA_DIRECTORY) if f.endswith(".csv")]
         self.num_classes = len(self.device_csvs)
 
     def sample_false_class(self, current_device_name, records_per_class):
@@ -52,18 +39,18 @@ class BinaryModel(Manager):
         return labeled
 
     def prepare_datasets(self):
-        datasets = {}
         for device_name in self.device_csvs:
             pos_df = self.prepare_true_class(device_name)
             records_per_class = max(1, len(pos_df) // max(1, self.num_classes - 1))
             neg_df = self.sample_false_class(device_name, records_per_class)
-            datasets[device_name] = pd.concat([pos_df, neg_df], ignore_index=True)
-        return datasets
+            data = pd.concat([pos_df, neg_df], ignore_index=True)
+            record = ModelRecord(name=device_name, data=data)
+            self.input_data.append(record)
 
 def main():
     manager = BinaryModel()
+    manager.prepare_datasets()
     manager.train_all()
-    print(manager.summary())
     manager.save_all()
 
 
