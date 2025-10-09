@@ -13,14 +13,14 @@ class Manager:
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest"):
         self.architecture = MODEL_ARCHITECTURES[architecture_name]
         self.data_prep = DatasetPreparation()
-        self.input_data: List[ModelRecord] = []
+        self.records: List[ModelRecord] = []
         self.random_state = RANDOM_STATE
         self.output_directory = MODELS_DIRECTORY
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
 
     def train_all(self):
-        for record in self.input_data:
+        for record in self.records:
             clf = BaseModel(self.architecture, record.data, record.name)
             clf.split()
             clf.scale()
@@ -58,8 +58,8 @@ class Manager:
         return train_acc, test_acc
 
     def save_average_accuracies(self):
-        avg_train_acc = self.total_train_acc / len(self.input_data)
-        avg_test_acc = self.total_test_acc / len(self.input_data)
+        avg_train_acc = self.total_train_acc / len(self.records)
+        avg_test_acc = self.total_test_acc / len(self.records)
         with open(f"{self.model_directory}/z_evalutation.txt", 'a') as file:
             file.write("\n=== Average Accuracies ===\n")
             file.write(f"Average Train Accuracy: {avg_train_acc:.4f}\n")
@@ -67,7 +67,7 @@ class Manager:
 
     def save_all(self, save_input_data = False):
         self.create_model_directory()
-        for record in self.input_data:
+        for record in self.records:
             model = record.model
             name = record.name
             joblib.dump(model, f"{self.model_directory}/{name}.pkl")
@@ -79,7 +79,7 @@ class Manager:
                 model.y_test.to_csv(f"{self.model_directory}/output.csv")
             if model.cv_results is not None:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
-        if len(self.input_data) > 1:
+        if len(self.records) > 1:
             self.save_average_accuracies()
 
         

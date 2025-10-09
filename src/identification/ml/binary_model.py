@@ -10,10 +10,11 @@ from src.identification.ml.model_record import ModelRecord
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
 
-    def __init__(self, architecture_name="standard_forest"):
+    def __init__(self, architecture_name="standard_forest", manager_name="random_forest"):
         super().__init__(architecture_name)
         self.device_csvs = [f.replace(".csv", "") for f in os.listdir(PREPROCESSED_DATA_DIRECTORY) if f.endswith(".csv")]
         self.num_classes = len(self.device_csvs)
+        self.manager_name = "binary_model"
 
     def sample_false_class(self, current_device_name, records_per_class):
         sampled_dfs = []
@@ -45,7 +46,7 @@ class BinaryModel(Manager):
             neg_df = self.sample_false_class(device_name, records_per_class)
             data = pd.concat([pos_df, neg_df], ignore_index=True)
             record = ModelRecord(name=device_name, data=data)
-            self.input_data.append(record)
+            self.records.append(record)
 
 def main():
     manager = BinaryModel()
