@@ -1,8 +1,8 @@
 {
     "preprocessed_data_directory":"data/preprocessed",
     "raw_data_directory": "data/raw",
-    "valid_features_directory":"src/identification/features.txt",
-    "feature_menu_path":"src/identification/feature_menu.yml",
+    "valid_features_directory":"src/identification/features/features.txt",
+    "feature_menu_path":"src/identification/features/feature_menu.yml",
     "models_directory":"models",
     "time_intervals": [10, 20, 30, 45, 60, 75, 90, 105],
     "internal_nets":["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
