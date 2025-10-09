@@ -1,16 +1,141 @@
+from datetime import datetime
+import os
+import joblib
+from config import MODELS_DIRECTORY, RANDOM_STATE
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from src.utils import unpack_features
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint
+
 
 class BaseModel:
-    def __init__(self, name) -> None:
+    def __init__(self, architecture, input_data, name, test_size = 0.2) -> None:
         self.name = name
+        self.output_directory = MODELS_DIRECTORY
+        self.model = architecture
+        self.data = input_data
+        self.train_acc = None
+        self.test_acc = None
+        self.report = None
+        self.confusion_matrix = None
+        self.cv_results = None
+        self.X_train, self.y_train, self.X_test, self.y_test = None, None, None, None
+        self.test_size = test_size
+        self.random_state = RANDOM_STATE
+        self._verify_schema()
+
+    def _verify_schema(self):
+        feature_columns = unpack_features()
+        feature_columns.append('label')
+        if self.data.columns != feature_columns:
+            raise ValueError("Input data schema does not match the requirements")
+
+    def split_and_scale(self):
+        X = self.data.drop(columns=["label"])
+        y = self.data["label"]
+
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
+        )
+
+    def scale(self):
+        self.scaler = StandardScaler()
+        self.X_train = pd.DataFrame(self.scaler.fit_transform(self.X_train), columns=self.X_train.columns)
+        self.X_test = pd.DataFrame(self.scaler.transform(self.X_test), columns=self.X_test.columns)
 
     def train(self):
-        pass
+        self.model.fit(self.X_train, self.y_train)
+        return self.model
 
-    def tune(self):
-        pass
+    def tune(self, n_iter=5, cv=5, estimator_range=[100, 500], max_depth_range=[5, 31, 5], min_samples_split_range=[2, 20],
+        min_samples_leaf_range=[1,10], max_features = ['sqrt', 'log2', None], scoring='accuracy', n_jobs=-1, verbose=2):
+        param_dist = {
+            'n_estimators': randint(estimator_range),
+            'max_depth': [None] + list(range(max_depth_range)),
+            'min_samples_split': randint(min_samples_split_range),
+            'min_samples_leaf': randint(min_samples_leaf_range),
+            'max_features': max_features
+        }
 
-    def evaluate(self):
-        pass
+        rand_search = RandomizedSearchCV(
+            estimator=self.model,
+            param_distributions=param_dist,
+            n_iter=n_iter,
+            cv=cv,
+            scoring=scoring,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            random_state=self.random_state
+        )
 
-    def save(self):
-        pass
+        rand_search.fit(self.X_train, self.y_train)
+        self.model = rand_search.best_estimator_
+
+        self.cv_results = pd.DataFrame(rand_search.cv_results_)
+        cols = [c for c in self.cv_results.columns if "split" in c and "test_score" in c]
+        print(self.cv_results[cols + ["mean_test_score", "std_test_score"]])
+        return self.model
+
+    def evaluate(self, verbose = True):
+        # Training accuracy
+        y_train_pred = self.model.predict(self.X_train)
+        self.train_acc = accuracy_score(self.y_train, y_train_pred)
+
+        # Validation/Test accuracy 
+        y_test_pred = self.model.predict(self.X_test)
+        self.test_acc = accuracy_score(self.y_test, y_test_pred)
+
+        # report
+        self.report = classification_report(self.y_test, y_test_pred)
+
+        # confusion matrix
+        self.confusion_matrix = confusion_matrix(self.y_test, y_test_pred)
+        
+        if verbose:
+            print(f"Train Accuracy: {self.train_acc:.4f}")
+            print(f"Validation/Test Accuracy: {self.test_acc:.4f}")
+            print("\nClassification Report (Test):")
+            print(self.report)
+            print("Confusion Matrix (Test):")
+            print(self.confusion_matrix)
+
+
+    def create_model_directory(self):
+        current_date = datetime.today().strftime('%Y-%m-%d')
+        current_directory = f"{self.output_directory}/{current_date}"
+        os.makedirs(current_directory, exist_ok=True)
+        model_ref = str(len(os.listdir(current_directory)))
+        if model_ref == '0': model_ref = ''
+        current_model_dir = f"{current_directory}/{self.name}{model_ref}"
+        os.makedirs(current_model_dir)
+        return current_model_dir
+
+    def save_evaluation(self, current_model_dir):
+        if not all(hasattr(self, attr) for attr in ['train_acc', 'test_acc', 'report', 'confusion_matrix']):
+            raise RuntimeError("Model must be evaluated before saving evaluation.")
+
+        with open(f"{current_model_dir}/evalutation.txt", 'w') as file:
+            file.write(f"train accuracy: {self.train_acc}\n")
+            file.write(f"test accuracy: {self.test_acc}\n")
+            file.write(f"report:\n{self.report}\n")
+            file.write(f"confusion_matrix:\n{self.confusion_matrix}")
+
+    def save(self, save_test_data = False):
+        if not all(hasattr(self, attr) for attr in ['cv_results', 'X_test', 'y_test']):
+            raise RuntimeError("Model must be evaluated before saving evaluation.")
+
+        current_model_dir = self.create_model_directory()
+        joblib.dump(self.model, f"{current_model_dir}/random_forest.pkl")
+
+        if save_test_data:
+            self.X_test.to_csv(f"{current_model_dir}/input.csv")
+            self.y_test.to_csv(f"{current_model_dir}/output.csv")
+
+        self.save_evaluation(current_model_dir)
+
+        if self.cv_results is not None:
+            self.cv_results.to_csv(f"{current_model_dir}/cross_validation.csv")
+        print(f"Model saved to {current_model_dir}")
