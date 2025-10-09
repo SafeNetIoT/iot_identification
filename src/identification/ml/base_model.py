@@ -27,10 +27,12 @@ class BaseModel:
         self._verify_schema()
 
     def _verify_schema(self):
-        feature_columns = unpack_features()
-        feature_columns.append('label')
-        if self.data.columns != feature_columns:
-            raise ValueError("Input data schema does not match the requirements")
+        if not isinstance(self.data, pd.DataFrame):
+            raise ValueError("Input datatype is not a pd.DataFrame:" + str(type(self.data)))
+        # feature_columns = unpack_features()
+        # feature_columns.append('label')
+        # if list(self.data.columns) != feature_columns:
+        #     raise ValueError("Input data schema does not match the requirements")
 
     def split(self):
         X = self.data.drop(columns=["label"])

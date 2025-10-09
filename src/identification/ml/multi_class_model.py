@@ -1,18 +1,20 @@
-from src.identification.ml.model_manager import BaseManager
+from src.identification.ml.model_manager import Manager
+from src.identification.ml.dataset_preparation import DatasetPreparation
 
 
-class MultiClassModel(BaseManager):
+class MultiClassModel(Manager):
     """Trains a single multiclass model for all devices combined."""
-
-    def prepare_datasets(self):
-        input_data = self.data_prep.combine_csvs()
-        return {"multi_class": input_data}
+    def __init__(self, input_data, architecture_name="standard_forest", name="multiclassForest"):
+        super().__init__(input_data, architecture_name, name)
 
 
 def main():
-    manager = MultiClassModel()
+    data_prep = DatasetPreparation()
+    input_data = [data_prep.combine_csvs()]
+    print(type(input_data))
+    manager = MultiClassModel(input_data)
     manager.train_all()
-    print(manager.summary())
+    # print(manager.summary())
     manager.save_all()
 
 if __name__ == "__main__":

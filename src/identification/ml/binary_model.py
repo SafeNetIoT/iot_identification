@@ -12,11 +12,11 @@ from config import PREPROCESSED_DATA_DIRECTORY, MODEL_ARCHITECTURES
 
 import pandas as pd
 import os
-from src.identification.ml.model_manager import BaseManager
+from src.identification.ml.model_manager import Manager
 from config import PREPROCESSED_DATA_DIRECTORY
 
 
-class BinaryModel(BaseManager):
+class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
 
     def __init__(self, architecture_name="standard_forest"):
@@ -39,7 +39,7 @@ class BinaryModel(BaseManager):
             labeled = self.data_prep.label_device(pruned, 0)
             sampled = labeled.sample(
                 n=min(records_per_class, len(labeled)),
-                random_state=self.data_prep.random_state
+                random_state=self.random_state
             )
             sampled_dfs.append(sampled)
         return pd.concat(sampled_dfs, ignore_index=True)
@@ -56,7 +56,7 @@ class BinaryModel(BaseManager):
         for device_name in self.device_csvs:
             pos_df = self.prepare_true_class(device_name)
             records_per_class = max(1, len(pos_df) // max(1, self.num_classes - 1))
-            neg_df = self.data_prep.sample_false_class(device_name, records_per_class)
+            neg_df = self.sample_false_class(device_name, records_per_class)
             datasets[device_name] = pd.concat([pos_df, neg_df], ignore_index=True)
         return datasets
 
