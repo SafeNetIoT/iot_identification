@@ -2,7 +2,7 @@ from identification.features.feature_extraction import ExtractionPipeline
 import os
 from config import TIME_INTERVALS, RAW_DATA_DIRECTORY
 import pandas as pd
-from src.identification.model import Model, DatasetPreparation
+from identification.multi_class_model import Model, DatasetPreparation
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
