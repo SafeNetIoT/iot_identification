@@ -48,7 +48,7 @@ class Manager:
     def save_evaluation(self, record):
         name = record.name
         train_acc, test_acc, report, conf_matrix = record.evaluation.values()
-        with open(f"{self.model_directory}/evalutation.txt", 'a') as file:
+        with open(f"{self.model_directory}/z_evalutation.txt", 'a') as file:
             file.write(f"\n=== {name} ===\n")
             file.write(f"train accuracy: {train_acc}\n")
             file.write(f"test accuracy: {test_acc}\n")
@@ -80,6 +80,7 @@ class Manager:
             if model.cv_results is not None:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
         if len(self.records) > 1:
+            print(len(self.records))
             self.save_average_accuracies()
 
         

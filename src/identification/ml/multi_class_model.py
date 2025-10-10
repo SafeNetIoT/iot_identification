@@ -1,5 +1,4 @@
 from src.identification.ml.model_manager import Manager
-from src.identification.ml.dataset_preparation import DatasetPreparation
 from src.identification.ml.model_record import ModelRecord
 import os
 import pandas as pd
@@ -11,6 +10,11 @@ class MultiClassModel(Manager):
         super().__init__(architecture_name, manager_name)
         self.manager_name = "multiclass_model"
 
+    def add_device(self, data):
+        record = ModelRecord(self.manager_name, data)
+        self.records.append(record)
+        print("number of records", len(self.records))
+
     def preprocess(self):   
         all_devices = []
         for device_csv in os.listdir(self.data_prep.preprocessed_data_directory):
@@ -20,8 +24,7 @@ class MultiClassModel(Manager):
             device_df = self.data_prep.clean_up(device_df)
             all_devices.append(device_df)
         data = pd.concat(all_devices, ignore_index=True)
-        record = ModelRecord(self.manager_name, data)
-        self.records.append(record)
+        self.add_device(data)
 
 
 def main():

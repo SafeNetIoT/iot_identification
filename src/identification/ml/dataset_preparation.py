@@ -1,6 +1,5 @@
 import pandas as pd
-from config import PREPROCESSED_DATA_DIRECTORY, VALID_FEATURES_DIRECTORY, MODELS_DIRECTORY
-import os
+from config import PREPROCESSED_DATA_DIRECTORY, VALID_FEATURES_DIRECTORY
 
 
 class DatasetPreparation:
@@ -26,9 +25,9 @@ class DatasetPreparation:
             raise ValueError("Output DataFrame is empty. Run preprocess() first.")
 
         null_counts = df.isnull().sum()
-        if not null_counts.empty:
-            print("Missing values per column:")
-            print(null_counts[null_counts > 0])
+        # if not null_counts.empty:
+        #     print("Missing values per column:")
+        #     print(null_counts[null_counts > 0])
         df = df.dropna()
 
         for col in self.features:
@@ -42,6 +41,9 @@ class DatasetPreparation:
             df = df.dropna()
 
         df = df.reset_index(drop=True)
-
-        print("Cleanup complete. Shape:", df.shape)
         return df
+
+    def prepare_df(self, device_df, label):
+        pruned_df = self.prune_features(device_df)
+        labeled_df = self.label_device(pruned_df, label)
+        return self.clean_up(labeled_df)
