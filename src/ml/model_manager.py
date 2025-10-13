@@ -1,13 +1,13 @@
 import os
 import pandas as pd
 from typing import Dict
-from src.identification.ml.base_model import BaseModel
+from src.ml.base_model import BaseModel
 from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY
-from src.identification.ml.dataset_preparation import DatasetPreparation
+from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
 import joblib
-from src.identification.ml.model_record import ModelRecord
+from src.ml.model_record import ModelRecord
 
 class Manager:
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest"):

@@ -3,8 +3,8 @@ import pandas as pd
 from config import PREPROCESSED_DATA_DIRECTORY
 import pandas as pd
 import os
-from src.identification.ml.model_manager import Manager
-from src.identification.ml.model_record import ModelRecord
+from src.ml.model_manager import Manager
+from src.ml.model_record import ModelRecord
 
 
 class BinaryModel(Manager):
