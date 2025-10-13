@@ -45,7 +45,7 @@ class Manager:
         os.makedirs(current_model_dir)
         self.model_directory = current_model_dir
 
-    def save_evaluation(self, record):
+    def save_evaluation(self, record: ModelRecord):
         name = record.name
         train_acc, test_acc, report, conf_matrix = record.evaluation.values()
         with open(f"{self.model_directory}/z_evalutation.txt", 'a') as file:

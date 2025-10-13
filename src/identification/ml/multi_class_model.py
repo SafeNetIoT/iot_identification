@@ -6,14 +6,12 @@ import pandas as pd
 
 class MultiClassModel(Manager):
     """Trains a single multiclass model for all devices combined."""
-    def __init__(self, architecture_name="standard_forest", manager_name="random_forest"):
-        super().__init__(architecture_name, manager_name)
-        self.manager_name = "multiclass_model"
+    def __init__(self, architecture_name="standard_forest", manager_name="multiclass_model"):
+        super().__init__(architecture_name=architecture_name, manager_name=manager_name)
 
     def add_device(self, data):
         record = ModelRecord(self.manager_name, data)
         self.records.append(record)
-        print("number of records", len(self.records))
 
     def preprocess(self):   
         all_devices = []

@@ -33,7 +33,6 @@ class TestPipeline:
             input_data = self.combine_csvs(collection_time)
             manager = MultiClassModel()
             manager.add_device(input_data)
-            # manager.preprocess()
             manager.train_all()
             manager.save_all()
             
