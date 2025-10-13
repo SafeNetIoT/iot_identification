@@ -1,6 +1,3 @@
-from datetime import datetime
-import os
-import joblib
 from config import MODELS_DIRECTORY, RANDOM_STATE
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -11,10 +8,11 @@ from sklearn.model_selection import RandomizedSearchCV
 from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
 from imblearn.over_sampling import RandomOverSampler
+from typing import Dict
 
 
 class BaseModel:
-    def __init__(self, architecture, input_data, name, test_size = 0.2) -> None:
+    def __init__(self, architecture: Dict, input_data: pd.DataFrame, name: str, test_size: float = 0.2) -> None:
         self.name = name
         self.output_directory = MODELS_DIRECTORY
         self.model = RandomForestClassifier(**architecture)
@@ -29,10 +27,11 @@ class BaseModel:
     def _verify_schema(self):
         if not isinstance(self.data, pd.DataFrame):
             raise ValueError("Input datatype is not a pd.DataFrame:" + str(type(self.data)))
-        # feature_columns = unpack_features()
-        # feature_columns.append('label')
-        # if list(self.data.columns) != feature_columns:
-        #     raise ValueError("Input data schema does not match the requirements")
+        
+        feature_columns = unpack_features()
+        feature_columns.append('label')
+        if list(self.data.columns) != feature_columns:
+            raise ValueError("Input data schema does not match the requirements")
 
     def split(self):
         X = self.data.drop(columns=["label"])
@@ -111,3 +110,10 @@ class BaseModel:
             print(self.report)
             print("Confusion Matrix (Test):")
             print(self.confusion_matrix)
+
+if __name__ == "__main__":
+    from config import MODEL_ARCHITECTURES
+    df = pd.read_csv("src/identification/sample.csv")
+    architecture = MODEL_ARCHITECTURES['standard_forest']
+    model = BaseModel(architecture, df, "")
+    print(1)
