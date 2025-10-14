@@ -21,7 +21,8 @@
         }
     },
     "random_state":42,
-    "input_data_schema":[
-        
-    ]
+    "testing":{
+        "fast_mode":1,
+        "sample_fraction":0.1
+    }
 }
