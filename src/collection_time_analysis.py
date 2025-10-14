@@ -1,9 +1,9 @@
-from identification.features.feature_extraction import ExtractionPipeline
+from src.features.feature_extraction import ExtractionPipeline
 import os
 from config import TIME_INTERVALS, RAW_DATA_DIRECTORY
 import pandas as pd
-from src.identification.ml.dataset_preparation import DatasetPreparation
-from src.identification.ml.multi_class_model import MultiClassModel
+from src.ml.dataset_preparation import DatasetPreparation
+from src.ml.multi_class_model import MultiClassModel
 
 
 class TestPipeline:
@@ -29,13 +29,15 @@ class TestPipeline:
         return pd.concat(all_dfs, ignore_index=True)
 
     def test_intervals(self):
+        cache = {}
         for collection_time in self.collection_times:
-            input_data = self.combine_csvs(collection_time)
+            if collection_time not in cache:
+                cache[collection_time] = self.combine_csvs(collection_time)
+            input_data = cache[collection_time]
             manager = MultiClassModel()
             manager.add_device(input_data)
             manager.train_all()
             manager.save_all()
-            
 
 def main():
     pipeline = TestPipeline()
