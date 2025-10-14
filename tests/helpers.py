@@ -2,6 +2,7 @@ import random
 import os
 import pandas as pd
 from typing import Optional
+import joblib
 
 def list_device_files(raw_dir: str) -> list[str]:
     """Return all .pcap files in the raw directory."""
@@ -33,3 +34,41 @@ def count_input_conversations(pcap_path: str) -> int:
     """Placeholder for conversation counting logic."""
     csv_path = pcap_path.replace(".pcap", ".csv")
     return len(pd.read_csv(csv_path))
+
+def run_model_workflow_test(manager, tmp_path):
+    """
+    Generic test for ML model managers:
+    - Runs preprocess/prepare_datasets or equivalent
+    - Trains and saves all models
+    - Asserts that model and evaluation files exist
+    - Checks that preprocessed data is non-empty
+    """
+
+    # --- Run workflow ---
+    if hasattr(manager, "prepare_datasets"):
+        manager.prepare_datasets()
+    elif hasattr(manager, "preprocess"):
+        manager.preprocess()
+    else:
+        raise AttributeError("Manager has no prepare_datasets or preprocess method")
+
+    manager.train_all()
+    manager.save_all(output_dir=tmp_path)
+
+    # --- Assertions ---
+    model_files = list(tmp_path.glob("*.pkl"))
+    assert model_files, "Expected trained model files in output directory"
+
+    # Optional: Load one model to ensure it’s valid
+    model = joblib.load(model_files[0])
+    assert hasattr(model, "predict"), "Model object missing predict() method"
+
+    # Optional: Evaluation or metrics files
+    eval_files = list(tmp_path.glob("*evaluation*.csv"))
+    assert eval_files, "Expected evaluation output file(s)"
+
+    # Data sanity
+    assert manager.records, "Manager should have records"
+    first_df = manager.records[0].data
+    assert isinstance(first_df, pd.DataFrame)
+    assert not first_df.empty, "Prepared dataset is empty"

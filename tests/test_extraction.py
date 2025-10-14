@@ -1,6 +1,6 @@
 import pytest
 import os
-from config import RAW_DATA_DIRECTORY
+from config import RAW_DATA_DIRECTORY, TEST_FRACTION
 from tests.helpers import list_device_files, sample_devices, validate_columns_consistent,validate_row_count
 from src.features.feature_extraction import ExtractionPipeline
 import pandas as pd
@@ -11,7 +11,7 @@ def test_extraction():
     device_files = list_device_files(RAW_DATA_DIRECTORY)
     assert device_files, "No device files found in raw data directory."
 
-    sampled_devices = sample_devices(device_files, frac=0.1)
+    sampled_devices = sample_devices(device_files, frac=TEST_FRACTION)
     print(f"Testing {len(sampled_devices)} of {len(device_files)} devices.")
 
     reference_cols = None
