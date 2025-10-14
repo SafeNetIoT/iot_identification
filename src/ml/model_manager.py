@@ -10,12 +10,12 @@ import joblib
 from src.ml.model_record import ModelRecord
 
 class Manager:
-    def __init__(self, architecture_name="standard_forest", manager_name="random_forest"):
+    def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None):
         self.architecture = MODEL_ARCHITECTURES[architecture_name]
         self.data_prep = DatasetPreparation()
         self.records: List[ModelRecord] = []
-        self.random_state = RANDOM_STATE
-        self.output_directory = MODELS_DIRECTORY
+        self.random_state = RANDOM_STATE            
+        self.output_directory = output_directory if output_directory is not None else MODELS_DIRECTORY
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
 
@@ -48,7 +48,7 @@ class Manager:
     def save_evaluation(self, record: ModelRecord):
         name = record.name
         train_acc, test_acc, report, conf_matrix = record.evaluation.values()
-        with open(f"{self.model_directory}/z_evalutation.txt", 'a') as file:
+        with open(f"{self.model_directory}/z_evaluation.txt", 'a') as file:
             file.write(f"\n=== {name} ===\n")
             file.write(f"train accuracy: {train_acc}\n")
             file.write(f"test accuracy: {test_acc}\n")
@@ -66,6 +66,8 @@ class Manager:
             file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
 
     def save_all(self, save_input_data = False):
+        if os.path.isfile(self.output_directory):
+            raise ValueError("output_directory is a file")
         self.create_model_directory()
         for record in self.records:
             model = record.model

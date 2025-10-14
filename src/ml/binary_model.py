@@ -10,8 +10,8 @@ from src.ml.model_record import ModelRecord
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
 
-    def __init__(self, architecture_name="standard_forest", manager_name="binary_model"):
-        super().__init__(architecture_name=architecture_name, manager_name=manager_name)
+    def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None):
+        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
         self.device_csvs = [f.replace(".csv", "") for f in os.listdir(PREPROCESSED_DATA_DIRECTORY) if f.endswith(".csv")]
         self.num_classes = len(self.device_csvs)
 
