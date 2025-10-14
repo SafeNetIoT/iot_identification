@@ -1,4 +1,4 @@
-from config import FEATURE_MENU_PATH, INTERNAL_NETS
+from config import FEATURE_MENU_PATH, INTERNAL_NETS, VALID_FEATURES_DIRECTORY
 import yaml
 from scapy.layers.inet import IP, TCP, UDP
 import ipaddress
@@ -14,6 +14,11 @@ def unpack_feature_groups():
         if "Feature" in block:
             feature_groups.append(block["Feature"])
     return feature_groups
+
+def unpack_features():
+    with open(VALID_FEATURES_DIRECTORY, 'r') as file:
+        features = [line.strip() for line in file]
+    return features
 
 def is_internal(ip: str) -> bool:
     ip_obj = ipaddress.ip_address(ip) if not isinstance(ip, (ipaddress.IPv4Address, ipaddress.IPv6Address)) else ip

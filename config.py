@@ -20,3 +20,6 @@ MAX_AGE_S = CONFIG['max_age_s']
 K_PAYLOAD_BYTES = CONFIG['k_payload_bytes']
 BATCH_ROWS = CONFIG['batch_rows']
 SWEEP_EVERY_PKTS = CONFIG['sweep_every_pkts']
+MODEL_ARCHITECTURES = CONFIG['model_architectures']
+RANDOM_STATE = CONFIG['random_state']
+TEST_FRACTION = CONFIG['testing']['sample_fraction'] if CONFIG['testing']['fast_mode'] else 1

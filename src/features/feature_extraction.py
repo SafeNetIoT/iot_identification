@@ -4,10 +4,10 @@ import pandas as pd
 from typing import Optional
 from config import RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY, MAX_AGE_S, SWEEP_EVERY_PKTS
 
-from src.identification.features.flow_state import FlowState, FlowStateFactory
+from src.features.flow_state import FlowState, FlowStateFactory
 from scapy.all import PcapReader
 from src.utils import is_internal, port_bucket, iot_service_id, discovery_proto_id, five_tuple, canonize
-from src.identification.features.flow_structs import (
+from src.features.flow_structs import (
     DirectionStats, TcpFlags, TlsInfo, Identifiers, PacketsStats, BytesStats, PacketLengthStats,
     IATStats, Ratios, PayloadStats, PresenceFlags, PortBuckets, IoTAdditions, TLSHints,
     IoTPortVocab, Features

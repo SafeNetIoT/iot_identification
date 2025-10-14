@@ -1,4 +1,4 @@
-# 🧪 TestPipeline — IoT Feature Extraction and Evaluation
+# TestPipeline — IoT Feature Extraction and Evaluation
 
 ## Overview
 `TestPipeline` automates the **end-to-end testing** of feature extraction and model evaluation across multiple packet capture (`.pcap`) files and time intervals.  
@@ -10,7 +10,7 @@ It performs:
 4. Model training, evaluation, and saving    
 
 ---
-## 🚀 Example Usage
+## Example Usage
 
 ```python
 from src.identification.test_pipeline import TestPipeline
@@ -29,7 +29,7 @@ print(df.head())
 
 ---
 
-## 🧠 Implementation Notes
+## Implementation Notes
 - Flow aggregation relies on the `five_tuple` (src/dst IPs and ports, protocol).  
 - Designed for modular replacement with the `ExtractionPipeline` class for production use.  
 - Compatible with both streaming and batch-based feature extraction modes.  
