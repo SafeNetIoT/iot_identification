@@ -80,7 +80,6 @@ class Manager:
             if model.cv_results is not None:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
         if len(self.records) > 1:
-            print(len(self.records))
             self.save_average_accuracies()
 
         
