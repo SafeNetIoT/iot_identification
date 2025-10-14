@@ -20,27 +20,18 @@ class DatasetPreparation:
         device_df.loc[:, 'label'] = device_label
         return device_df
 
-    def clean_up(self, df: pd.DataFrame): #optimize
+    def clean_up(self, df: pd.DataFrame):
         if df is None or df.empty:
             raise ValueError("Output DataFrame is empty. Run preprocess() first.")
 
-        null_counts = df.isnull().sum()
-        # if not null_counts.empty:
-        #     print("Missing values per column:")
-        #     print(null_counts[null_counts > 0])
-        df = df.dropna()
+        existing_cols = [col for col in self.features if col in df.columns]
+        df[existing_cols] = df[existing_cols].apply(pd.to_numeric, errors="coerce")
 
-        for col in self.features:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors="coerce")
+        before_rows = len(df)
+        df = df.dropna().reset_index(drop=True)
 
-        bad_vals = df.isnull().sum()
-        if bad_vals.sum() > 0:
-            print("Warning: Non-numeric values were found and converted to NaN.")
-            print(bad_vals[bad_vals > 0])
-            df = df.dropna()
-
-        df = df.reset_index(drop=True)
+        if len(df) < before_rows:
+            print(f"Warning: Dropped {before_rows - len(df)} rows with invalid or missing values.")
         return df
 
     def prepare_df(self, device_df, label):
