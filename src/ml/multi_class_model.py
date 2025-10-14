@@ -1,5 +1,5 @@
-from src.identification.ml.model_manager import Manager
-from src.identification.ml.model_record import ModelRecord
+from src.ml.model_manager import Manager
+from src.ml.model_record import ModelRecord
 import os
 import pandas as pd
 
