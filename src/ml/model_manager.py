@@ -83,7 +83,6 @@ class Manager:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
         if len(self.records) > 1:
             self.save_average_accuracies()
-
         
 
 

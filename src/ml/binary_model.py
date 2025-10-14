@@ -5,6 +5,7 @@ import pandas as pd
 import os
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
+import joblib
 
 
 class BinaryModel(Manager):
@@ -14,6 +15,7 @@ class BinaryModel(Manager):
         super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
         self.device_csvs = [f.replace(".csv", "") for f in os.listdir(PREPROCESSED_DATA_DIRECTORY) if f.endswith(".csv")]
         self.num_classes = len(self.device_csvs)
+        self.loaded_model_dir = output_directory if os.path.isfile(output_directory) else None
 
     def sample_false_class(self, current_device_name, records_per_class):
         sampled_dfs = []

@@ -17,7 +17,7 @@ def test_multiclass_model(tmp_path):
     manager.preprocess()
     run_model_workflow_test(manager, tmp_path)
 
-# @pytest.mark.integration
+@pytest.mark.integration
 def test_binary_model(tmp_path):
     """End-to-end test for BinaryModel workflow."""
     manager = BinaryModel(manager_name="test_binary", output_directory=tmp_path)
