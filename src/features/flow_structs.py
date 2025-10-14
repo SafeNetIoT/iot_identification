@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, asdict
-from identification.features.stats import OnlineStats, EntropyCounter
+from src.features.stats import OnlineStats, EntropyCounter
 from config import K_PAYLOAD_BYTES
 from src.utils import flatten
 
