@@ -28,3 +28,17 @@ where = ["src"]
 [tool.setuptools.package-data]
 # Include configs/yaml/json files in the install
 "doh_iot" = ["*.yml", "*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".",          # allow imports like "import config"
+  "src"         # allow imports like "from src.ml import ..."
+]
+addopts = "-v"
+testpaths = [
+  "tests"
+]
+markers = [
+  "integration: mark test as an integration test (runs longer and uses real data)",
+  "slow: mark test as slow (optional)"
+]

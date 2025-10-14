@@ -22,4 +22,4 @@ BATCH_ROWS = CONFIG['batch_rows']
 SWEEP_EVERY_PKTS = CONFIG['sweep_every_pkts']
 MODEL_ARCHITECTURES = CONFIG['model_architectures']
 RANDOM_STATE = CONFIG['random_state']
-TEST_FRACTION = CONFIG['testing']['sample_fraction'] if CONFIG['fast_mode'] else 1
+TEST_FRACTION = CONFIG['testing']['sample_fraction'] if CONFIG['testing']['fast_mode'] else 1
