@@ -110,7 +110,7 @@ pip install -e .
 ### 4. Run the model with the default features  
 ```bash
 python -m src.identification.feature_extraction.py
-python -m src.identification.model.py
+python -m src.identification.binary_model.py
 ```
 
 ---
