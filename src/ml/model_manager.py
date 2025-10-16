@@ -19,20 +19,23 @@ class Manager:
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
 
+    def train_classifier(self, record):
+        clf = BaseModel(self.architecture, record.data, record.name)
+        clf.split()
+        clf.scale()
+        clf.train()
+        clf.evaluate()
+        record.model = clf
+        record.evaluation = {
+            "train_acc": clf.train_acc,
+            "test_acc": clf.test_acc,
+            "report": clf.report,
+            "confusion_matrix": clf.confusion_matrix,
+        }
+
     def train_all(self):
         for record in self.records:
-            clf = BaseModel(self.architecture, record.data, record.name)
-            clf.split()
-            clf.scale()
-            clf.train()
-            clf.evaluate()
-            record.model = clf
-            record.evaluation = {
-                "train_acc": clf.train_acc,
-                "test_acc": clf.test_acc,
-                "report": clf.report,
-                "confusion_matrix": clf.confusion_matrix,
-            }
+            self.train_classifier(record)
         print("\n Training complete.")
 
     def create_model_directory(self):
@@ -64,6 +67,20 @@ class Manager:
             file.write("\n=== Average Accuracies ===\n")
             file.write(f"Average Train Accuracy: {avg_train_acc:.4f}\n")
             file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
+
+    def save_classifier(self, record, save_input_data = False):
+        self.create_model_directory()
+        model = record.model
+        name = record.name
+        joblib.dump(model, f"{self.model_directory}/{name}.pkl")
+        train_acc, test_acc = self.save_evaluation(record)
+        self.total_train_acc += train_acc
+        self.total_test_acc += test_acc
+        if save_input_data:
+            model.X_test.to_csv(f"{self.model_directory}/input.csv")
+            model.y_test.to_csv(f"{self.model_directory}/output.csv")
+        if model.cv_results is not None:
+            model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
 
     def save_all(self, save_input_data = False):
         if os.path.isfile(self.output_directory):

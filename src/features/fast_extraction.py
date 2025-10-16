@@ -6,6 +6,7 @@ import pandas as pd
 from config import SWEEP_EVERY_PKTS, FAST_EXTRACTION_DIRECTORY, RAW_DATA_DIRECTORY
 import os
 from pathlib import Path
+from src.ml.dataset_preparation import DatasetPreparation
 
 @dataclass
 class ValidFeatures:
@@ -27,7 +28,6 @@ class ValidFeatures:
     small_pkt_ratio_fwd:float
     small_pkt_ratio_bwd:float
     ttl_fwd_first:int
-    label:str
 
 class FastFeatureExtractor:
     def __init__(self, state) -> None:
@@ -109,6 +109,7 @@ class FastExtractionPipeline:
 def main():
     os.makedirs(FAST_EXTRACTION_DIRECTORY, exist_ok=True)
     extractor = FastExtractionPipeline()
+    data_prep = DatasetPreparation()
     for device in os.listdir(RAW_DATA_DIRECTORY):
         device_dfs = []
         data_dir = Path(f"{RAW_DATA_DIRECTORY}/{device}")
@@ -116,6 +117,7 @@ def main():
             device_df = extractor.extract_features(str(pcap_path))
             device_dfs.append(device_df)
         complete_device = pd.concat(device_dfs, ignore_index=True)
+        complete_device = data_prep.label_device(complete_device, device)
         complete_device.to_csv(f"{FAST_EXTRACTION_DIRECTORY}/{device}.csv", index=False)
 
 if __name__ == "__main__":
