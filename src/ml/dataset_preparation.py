@@ -16,7 +16,8 @@ class DatasetPreparation:
         device = device_df[keep_cols].copy()
         return device
 
-    def label_device(self, device_df, device_label):
+    @staticmethod
+    def label_device(device_df, device_label):
         device_df.loc[:, 'label'] = device_label
         return device_df
 
