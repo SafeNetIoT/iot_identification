@@ -71,7 +71,8 @@ class Manager:
             file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
 
     def save_classifier(self, record, save_input_data = False):
-        self.create_model_directory()
+        if self.model_directory in None:
+            self.create_model_directory()
         model = record.model
         name = record.name
         joblib.dump(model, f"{self.model_directory}/{name}.pkl")
