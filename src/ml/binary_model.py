@@ -1,12 +1,12 @@
 import os
 import pandas as pd
-from config import PREPROCESSED_DATA_DIRECTORY, MODEL_ARCHITECTURES
+from config import PREPROCESSED_DATA_DIRECTORY
 import pandas as pd
 import os
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
-from src.ml.base_model import BaseModel
+from pathlib import Path
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -50,27 +50,28 @@ class BinaryModel(Manager):
 
     def add_device(self, device_name, device_directory):
         fast_extractor = FastExtractionPipeline()
-        input_data = []
+        device_path = Path(device_directory)
 
-        def dfs(directory):
-            if os.path.isfile(directory):
-                conversation_df = fast_extractor.extract_features(directory)
-                input_data.append(conversation_df)
-                return
-            for subdir in directory:
-                dfs(subdir)
+        if not device_path.exists():
+            raise FileNotFoundError(f"Device directory not found: {device_path}")
 
-        dfs(device_directory)
-        combined_df = pd.concat(input_data, ignore_index=True)
-        true_class = self.data_prep.label_device(self.data_prep.clean_up(combined_df), 1)
+        pcap_files = list(device_path.rglob("*.pcap"))
+        data_frames = []
+        for pcap_path in pcap_files:
+            df = fast_extractor.extract_features(str(pcap_path))
+            if not df.empty:
+                data_frames.append(df)
+
+        combined_df = pd.concat(data_frames, ignore_index=True)
+        cleaned_df = self.data_prep.clean_up(combined_df)
+        true_class = self.data_prep.label_device(cleaned_df, 1)
         false_class = self.sample_false_class(device_name, len(true_class))
-        new_record = ModelRecord(
-            device_name,
-            pd.concat([true_class, false_class], ignore_index=True)
-        )
-        # self.records.append(new_record)  
-        self.train_classifier(new_record, show_curve=True)
-        # self.save_classifier(new_record)          
+        dataset = pd.concat([true_class, false_class], ignore_index=True)
+        record = ModelRecord(device_name, dataset)
+        self.records.append(record)
+
+        self.train_classifier(record, show_curve=True)
+        self.save_classifier(record)
 
 def main():
     manager = BinaryModel()
