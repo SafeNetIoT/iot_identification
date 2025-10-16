@@ -69,8 +69,8 @@ class BinaryModel(Manager):
             pd.concat([true_class, false_class], ignore_index=True)
         )
         # self.records.append(new_record)  
-        self.train_classifier(new_record)
-        self.save_classifier(new_record)          
+        self.train_classifier(new_record, show_curve=True)
+        # self.save_classifier(new_record)          
 
 def main():
     manager = BinaryModel()

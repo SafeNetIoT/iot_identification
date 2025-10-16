@@ -19,7 +19,7 @@ class Manager:
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
 
-    def train_classifier(self, record):
+    def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
         clf.split()
         clf.scale()
@@ -32,6 +32,8 @@ class Manager:
             "report": clf.report,
             "confusion_matrix": clf.confusion_matrix,
         }
+        if show_curve:
+            clf.plot_learning_curve()
 
     def train_all(self):
         for record in self.records:

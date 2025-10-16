@@ -4,11 +4,13 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from src.utils import unpack_features
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
-from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV, learning_curve
 from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
 from imblearn.over_sampling import RandomOverSampler
 from typing import Dict
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class BaseModel:
@@ -18,6 +20,7 @@ class BaseModel:
         self.model = RandomForestClassifier(**architecture)
         self.data = input_data
         self.train_acc, self.test_acc, self.report, self.confusion_matrix = None, None, None, None
+        self.X, self.y = None, None
         self.X_train, self.y_train, self.X_test, self.y_test = None, None, None, None
         self.cv_results = None
         self.test_size = test_size
@@ -34,11 +37,11 @@ class BaseModel:
             raise ValueError("Input data schema does not match the requirements")
 
     def split(self):
-        X = self.data.drop(columns=["label"])
-        y = self.data["label"]
+        self.X = self.data.drop(columns=["label"])
+        self.y = self.data["label"]
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
+            self.X, self.y, test_size=self.test_size, random_state=self.random_state, stratify=self.y
         )
 
     def scale(self):
@@ -110,6 +113,23 @@ class BaseModel:
             print(self.report)
             print("Confusion Matrix (Test):")
             print(self.confusion_matrix)
+
+    def plot_learning_curve(self):
+        train_sizes, train_scores, test_scores = learning_curve(
+        self.model, self.X, self.y, cv=5,
+        train_sizes=np.linspace(0.1, 1.0, 10),  # 10% incr
+        scoring="accuracy"
+        )
+
+        train_mean = train_scores.mean(axis=1)
+        test_mean = test_scores.mean(axis=1)
+
+        plt.plot(train_sizes, train_mean, label="Training score")
+        plt.plot(train_sizes, test_mean, label="Validation score")
+        plt.xlabel("Training set size")
+        plt.ylabel("Accuracy")
+        plt.legend()
+        plt.show()
 
 if __name__ == "__main__":
     from config import MODEL_ARCHITECTURES
