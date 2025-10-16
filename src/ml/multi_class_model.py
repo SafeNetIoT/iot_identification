@@ -18,8 +18,6 @@ class MultiClassModel(Manager):
         for device_csv in os.listdir(self.data_prep.preprocessed_data_directory):
             device_df = pd.read_csv(f"{self.data_prep.preprocessed_data_directory}/{device_csv}")
             device_name = device_csv.split(".csv")[0]
-            # device_df = self.data_prep.label_device(self.data_prep.prune_features(device_df), device_name)
-            # device_df = self.data_prep.clean_up(device_df)
             device_df = self.data_prep.prepare_df(device_df, device_name)
             all_devices.append(device_df)
         data = pd.concat(all_devices, ignore_index=True)
