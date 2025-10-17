@@ -5,7 +5,6 @@ import pandas as pd
 import os
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
-from src.features.fast_extraction import FastExtractionPipeline
 from pathlib import Path
 
 class BinaryModel(Manager):
@@ -49,16 +48,14 @@ class BinaryModel(Manager):
             self.records.append(record)
 
     def add_device(self, device_name, device_directory):
-        fast_extractor = FastExtractionPipeline()
         device_path = Path(device_directory)
-
         if not device_path.exists():
             raise FileNotFoundError(f"Device directory not found: {device_path}")
 
         pcap_files = list(device_path.rglob("*.pcap"))
         data_frames = []
         for pcap_path in pcap_files:
-            df = fast_extractor.extract_features(str(pcap_path))
+            df = self.fast_extractor.extract_features(str(pcap_path))
             if not df.empty:
                 data_frames.append(df)
 
@@ -75,10 +72,15 @@ class BinaryModel(Manager):
 
 def main():
     manager = BinaryModel()
-    manager.add_device("alexa2", "data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+    # manager.add_device("alexa2", "data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+
     # manager.prepare_datasets()
     # manager.train_all()
     # manager.save_all()
+
+    manager = BinaryModel(output_directory="models/2025-10-17/binary_model")
+    res = manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+    print(res)
 
 
 if __name__ == "__main__":

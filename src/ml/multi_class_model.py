@@ -25,10 +25,13 @@ class MultiClassModel(Manager):
 
 
 def main():
-    manager = MultiClassModel()
-    manager.preprocess()
-    manager.train_all()
-    manager.save_all()
+    # manager = MultiClassModel()
+    # manager.preprocess()
+    # manager.train_all()
+    # manager.save_all()
+
+    manager = MultiClassModel(output_directory="models/2025-10-17/multiclass_model1")
+    manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
 
 if __name__ == "__main__":
     main()

@@ -8,6 +8,7 @@ from typing import List
 from datetime import datetime
 import joblib
 from src.ml.model_record import ModelRecord
+from src.features.fast_extraction import FastExtractionPipeline
 
 class Manager:
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None):
@@ -18,6 +19,8 @@ class Manager:
         self.output_directory = output_directory if output_directory is not None else MODELS_DIRECTORY
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
+        self.fast_extractor = FastExtractionPipeline()
+        self.model_directory = None
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
@@ -71,7 +74,7 @@ class Manager:
             file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
 
     def save_classifier(self, record, save_input_data = False):
-        if self.model_directory in None:
+        if self.model_directory is None:
             self.create_model_directory()
         model = record.model
         name = record.name
@@ -103,6 +106,28 @@ class Manager:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
         if len(self.records) > 1:
             self.save_average_accuracies()
+
+    def load_model(self):
+        if not os.path.exists(self.output_directory): 
+            raise ValueError("Model has to be saved before it is loaded")
+        return [joblib.load(f"{self.output_directory}/{file}") for file in os.listdir(self.output_directory) if file.endswith(".pkl")]
+
+    def predict(self, pcap_file):
+        X = self.fast_extractor.extract_features(pcap_file)
+        if X.empty:
+            print("Empty variable")
+            return 
+        model_arr = self.load_model()
+        result_class, score = None, 0
+        for model in model_arr:
+            predicted_class, confidence = model.predict(X)
+            if predicted_class == 0:
+                continue
+            print(model.name, predicted_class, confidence)
+            if confidence > score:
+                result_class, score = model.name, confidence
+        return result_class
+
         
 
 

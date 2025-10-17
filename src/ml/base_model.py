@@ -131,6 +131,11 @@ class BaseModel:
         plt.legend()
         plt.show()
 
+    def predict(self, X: pd.DataFrame) -> tuple[str, float]:
+        probas = self.model.predict_proba(X)[0]
+        best_idx = probas.argmax()
+        return self.model.classes_[best_idx], probas[best_idx]
+
 if __name__ == "__main__":
     from config import MODEL_ARCHITECTURES
     df = pd.read_csv("src/identification/sample.csv")
