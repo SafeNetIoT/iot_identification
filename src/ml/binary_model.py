@@ -28,6 +28,8 @@ class BinaryModel(Manager):
             labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
             labeled_df.attrs['pcap_path'] = str(device_pcap)
             self.device_sessions[device_name].append(labeled_df)
+            if not os.path.exists(f"extracted_features/{device_name}.vsv"):
+                labeled_df.to_csv(f"extracted_features/{device_name}.csv", index=False)
 
     def sample_false_class(self, current_device_name, sessions_per_class):
         sampled_dfs = []
@@ -92,9 +94,9 @@ def main():
         print()
     manager.prepare_datasets()
     manager.train_all()
-    # manager.save_all()
+    manager.save_all()
 
-    # manager = BinaryModel(output_directory="models/2025-10-17/binary_model")
+    # manager = BinaryModel(output_directory="models/2025-10-20/binary_model")
     # res = manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
     # print(res)
 

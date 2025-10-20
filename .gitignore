@@ -5,3 +5,4 @@
 data/
 models/
 **/*cache
+/extracted_features
