@@ -25,24 +25,40 @@ class BaseModel:
         self.cv_results = None
         self.test_size = test_size
         self.random_state = RANDOM_STATE
-        self._verify_schema()
+        # self._verify_schema()
 
     def _verify_schema(self):
-        if not isinstance(self.data, pd.DataFrame):
-            raise ValueError("Input datatype is not a pd.DataFrame:" + str(type(self.data)))
-        
+        # if not isinstance(self.data, list(pd.DataFrame)):
+        #     raise ValueError("Input datatype is not a List[pd.DataFrame]:" + str(type(self.data)))
         feature_columns = unpack_features()
         feature_columns.append('label')
         if list(self.data.columns) != feature_columns:
             raise ValueError("Input data schema does not match the requirements")
 
     def split(self):
-        self.X = self.data.drop(columns=["label"])
-        self.y = self.data["label"]
+        if not isinstance(self.data, list):
+            raise TypeError("self.data must be a list of session DataFrames (each containing a 'label' column).")
 
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.X, self.y, test_size=self.test_size, random_state=self.random_state, stratify=self.y
+        session_labels = [df["label"].iloc[0] for df in self.data]
+        train_sessions, test_sessions = train_test_split(
+            self.data,
+            test_size=self.test_size,
+            random_state=self.random_state,
+            stratify=session_labels,
         )
+
+        train_merged = pd.concat(train_sessions, ignore_index=True)
+        test_merged = pd.concat(test_sessions, ignore_index=True)
+        self.X_train = train_merged.drop(columns=["label"])
+        self.y_train = train_merged["label"]
+        self.X_test = test_merged.drop(columns=["label"])
+        self.y_test = test_merged["label"]
+        print("split training data")
+
+        train_paths = {df.attrs.get("pcap_path") for df in train_sessions}
+        test_paths  = {df.attrs.get("pcap_path") for df in test_sessions}
+        overlap = train_paths & test_paths
+        print(overlap)
 
     def scale(self):
         self.scaler = StandardScaler()

@@ -96,6 +96,7 @@ class Manager:
             model = record.model
             name = record.name
             joblib.dump(model, f"{self.model_directory}/{name}.pkl")
+            print(f"saved {model} to {self.model_directory}/{name}.pkl")
             train_acc, test_acc = self.save_evaluation(record)
             self.total_train_acc += train_acc
             self.total_test_acc += test_acc
