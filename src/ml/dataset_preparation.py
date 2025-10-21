@@ -18,8 +18,7 @@ class DatasetPreparation:
 
     @staticmethod
     def label_device(device_df, device_label):
-        device_df.loc[:, 'label'] = device_label
-        return device_df
+        return device_df.assign(label=device_label)
 
     def clean_up(self, df: pd.DataFrame):
         if df is None or df.empty:

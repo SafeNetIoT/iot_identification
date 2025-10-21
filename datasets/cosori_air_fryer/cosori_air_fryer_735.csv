@@ -1,0 +1,2 @@
+sport,dur,pkts_fwd,pkts_bwd,bytes_fwd,bytes_bwd,pktlen_fwd_mean,pktlen_fwd_std,pktlen_bwd_mean,pktlen_bwd_std,iat_fwd_mean,iat_fwd_std,pps,payload_entropy_fwd,iat_cv_fwd,small_pkt_ratio_fwd,small_pkt_ratio_bwd,ttl_fwd_first,label
+4096,0.7313802242279053,2,2,153,276,76.5,3.5355339059327378,138.0,67.88225099390856,0.7294280529022217,0.0,5.469111506566468,0.0,0.0,1.0,0.5,128,1

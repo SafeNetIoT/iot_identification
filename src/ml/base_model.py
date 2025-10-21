@@ -148,7 +148,8 @@ class BaseModel:
         plt.show()
 
     def predict(self, X: pd.DataFrame) -> tuple[str, float]:
-        probas = self.model.predict_proba(X)[0]
+        X_scaled = pd.DataFrame(self.scaler.transform(X), columns=X.columns)
+        probas = self.model.predict_proba(X_scaled)[0]
         best_idx = probas.argmax()
         return self.model.classes_[best_idx], probas[best_idx]
 
