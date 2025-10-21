@@ -98,8 +98,15 @@ def main():
     # manager.save_all()
 
     manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
-    res = manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
-    print(res)
+    for subdir in Path("data/raw").iterdir():
+        if subdir.is_dir():
+            # find the first file anywhere inside this subdirectory
+            for f in subdir.rglob("*"):
+                if f.is_file():
+                    res = manager.predict(str(f))
+                    print("First file in", subdir, "→", f)
+                    print("Prediction:", res)
+                    break  # stop after first file found
 
 
 if __name__ == "__main__":
