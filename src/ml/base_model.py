@@ -8,13 +8,13 @@ from sklearn.model_selection import RandomizedSearchCV, learning_curve
 from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
 from imblearn.over_sampling import RandomOverSampler
-from typing import Dict
+from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class BaseModel:
-    def __init__(self, architecture: Dict, input_data: pd.DataFrame, name: str, test_size: float = 0.2) -> None:
+    def __init__(self, architecture: Dict, input_data: List[pd.DataFrame], name: str, test_size: float = 0.2) -> None:
         self.name = name
         self.output_directory = MODELS_DIRECTORY
         self.model = RandomForestClassifier(**architecture)
@@ -49,6 +49,11 @@ class BaseModel:
 
         train_merged = pd.concat(train_sessions, ignore_index=True)
         test_merged = pd.concat(test_sessions, ignore_index=True)
+
+        all_data = pd.concat([train_merged, test_merged], ignore_index=True)
+        self.X = all_data.drop(columns=["label"])
+        self.y = all_data["label"]
+
         self.X_train = train_merged.drop(columns=["label"])
         self.y_train = train_merged["label"]
         self.X_test = test_merged.drop(columns=["label"])
@@ -131,6 +136,12 @@ class BaseModel:
             print(self.confusion_matrix)
 
     def plot_learning_curve(self):
+        if self.X is None:
+            print("X is None")
+            return 
+        if self.y is None:
+            print("y is None")
+            return 
         train_sizes, train_scores, test_scores = learning_curve(
         self.model, self.X, self.y, cv=5,
         train_sizes=np.linspace(0.1, 1.0, 10),  # 10% incr

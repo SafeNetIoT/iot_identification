@@ -71,13 +71,15 @@ class BinaryModel(Manager):
         true_class = []
         for pcap_path in pcap_files:
             session = self.fast_extractor.extract_features(str(pcap_path))
+            if session.empty:
+                continue
             session = self.data_prep.label_device(session, 1)
             session = self.data_prep.clean_up(session)
-            if not session.empty:
-                true_class.append(session)
+            true_class.append(session)
 
         false_class = self.sample_false_class(device_name, len(true_class))
         dataset = true_class + false_class
+        print("dataset length:", len(dataset))
         record = ModelRecord(device_name, dataset)
         self.records.append(record)
 
@@ -85,8 +87,8 @@ class BinaryModel(Manager):
         self.save_classifier(record)
 
 def main():
-    # manager = BinaryModel()
-    # manager.add_device("alexa2", "data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+    manager = BinaryModel()
+    manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
 
     # manager = BinaryModel()
     # manager.prepare_sessions()
@@ -96,17 +98,6 @@ def main():
     # manager.prepare_datasets()
     # manager.train_all()
     # manager.save_all()
-
-    manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
-    for subdir in Path("data/raw").iterdir():
-        if subdir.is_dir():
-            # find the first file anywhere inside this subdirectory
-            for f in subdir.rglob("*"):
-                if f.is_file():
-                    res = manager.predict(str(f))
-                    print("First file in", subdir, "→", f)
-                    print("Prediction:", res)
-                    break  # stop after first file found
 
 
 if __name__ == "__main__":
