@@ -27,5 +27,5 @@
         "fast_mode":1,
         "sample_fraction":0.1
     },
-    "model_under_test":"models/2025-10-21/binary_model2"
+    "model_under_test":"models/2025-10-23/binary_model5"
 }
