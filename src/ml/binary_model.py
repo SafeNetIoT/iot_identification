@@ -112,8 +112,8 @@ class BinaryModel(Manager):
         self.save_classifier(record)
 
 def main():
-    manager = BinaryModel()
-    manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
+    # manager = BinaryModel()
+    # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
 
     # manager = BinaryModel()
     # manager.prepare_sessions()
@@ -123,6 +123,9 @@ def main():
     # manager.prepare_datasets()
     # manager.train_all()
     # manager.save_all()
+
+    manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
+    manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")
 
 
 if __name__ == "__main__":
