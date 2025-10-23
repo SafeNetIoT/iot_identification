@@ -11,7 +11,8 @@ from imblearn.over_sampling import RandomOverSampler
 from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
-
+from exceptions import DataLeakageError, PipelineStateError
+from src.ml.tune_config import TuneConfig
 
 class BaseModel:
     def __init__(self, architecture: Dict, input_data: List[pd.DataFrame], name: str, test_size: float = 0.2) -> None:
@@ -25,20 +26,26 @@ class BaseModel:
         self.cv_results = None
         self.test_size = test_size
         self.random_state = RANDOM_STATE
-        # self._verify_schema()
+        self._verify_schema()
 
     def _verify_schema(self):
-        # if not isinstance(self.data, list(pd.DataFrame)):
-        #     raise ValueError("Input datatype is not a List[pd.DataFrame]:" + str(type(self.data)))
-        feature_columns = unpack_features()
-        feature_columns.append('label')
-        if list(self.data.columns) != feature_columns:
-            raise ValueError("Input data schema does not match the requirements")
-
-    def split(self):
         if not isinstance(self.data, list):
-            raise TypeError("self.data must be a list of session DataFrames (each containing a 'label' column).")
+            raise TypeError(f"`data` must be a list, not {type(self.data)}")
 
+        if not all(isinstance(df, pd.DataFrame) for df in self.data):
+            bad_types = [type(df) for df in self.data if not isinstance(df, pd.DataFrame)]
+            raise TypeError(f"All elements in `data` must be pandas DataFrames, got {bad_types}")
+
+        feature_columns = unpack_features()
+        expected_columns = feature_columns + ["label"]
+        for i, df in enumerate(self.data):
+            if list(df.columns) != expected_columns:
+                raise ValueError(
+                    f"Schema mismatch in DataFrame {i}: "
+                    f"expected columns {expected_columns}, got {list(df.columns)}"
+                )
+
+    def _split_sessions(self):
         session_labels = [df["label"].iloc[0] for df in self.data]
         train_sessions, test_sessions = train_test_split(
             self.data,
@@ -46,7 +53,9 @@ class BaseModel:
             random_state=self.random_state,
             stratify=session_labels,
         )
+        return train_sessions, test_sessions
 
+    def _prepare_train_test_data(self, train_sessions, test_sessions):
         train_merged = pd.concat(train_sessions, ignore_index=True)
         test_merged = pd.concat(test_sessions, ignore_index=True)
 
@@ -58,12 +67,19 @@ class BaseModel:
         self.y_train = train_merged["label"]
         self.X_test = test_merged.drop(columns=["label"])
         self.y_test = test_merged["label"]
-        print("split training data")
 
+    def _check_data_leakage(self, train_sessions, test_sessions):
         train_paths = {df.attrs.get("pcap_path") for df in train_sessions}
-        test_paths  = {df.attrs.get("pcap_path") for df in test_sessions}
+        test_paths = {df.attrs.get("pcap_path") for df in test_sessions}
         overlap = train_paths & test_paths
-        print(overlap)
+        print("overlap=", overlap)
+        if overlap != {None}:
+            raise DataLeakageError(f"Data leakage detected between training and test data: {overlap}")
+
+    def split(self):
+        train_sessions, test_sessions = self._split_sessions()
+        self._prepare_train_test_data(train_sessions, test_sessions)
+        self._check_data_leakage(train_sessions, test_sessions)
 
     def scale(self):
         self.scaler = StandardScaler()
@@ -72,7 +88,7 @@ class BaseModel:
 
     def balance_dataset(self, verbose = False):
         if self.X_train is None or self.y_train is None:
-            raise ValueError("Run preprocess() before balancing.")
+            raise PipelineStateError("Training data has not been initialized")
 
         ros = RandomOverSampler(random_state=42)
         X_resampled, y_resampled = ros.fit_resample(self.X_train, self.y_train)
@@ -82,40 +98,39 @@ class BaseModel:
             print("After balancing:", pd.Series(y_resampled).value_counts().to_dict())
 
         self.X_train, self.y_train = X_resampled, y_resampled
-        return self.X_train, self.y_train
 
     def train(self):
         self.model.fit(self.X_train, self.y_train)
-        return self.model
 
-    def tune(self, n_iter=5, cv=5, estimator_range=[100, 500], max_depth_range=[5, 31, 5], min_samples_split_range=[2, 20],
-        min_samples_leaf_range=[1,10], max_features = ['sqrt', 'log2', None], scoring='accuracy', n_jobs=-1, verbose=2):
-        param_dist = {
-            'n_estimators': randint(estimator_range),
-            'max_depth': [None] + list(range(max_depth_range)),
-            'min_samples_split': randint(min_samples_split_range),
-            'min_samples_leaf': randint(min_samples_leaf_range),
-            'max_features': max_features
+    def _build_param_distributions(self, estimator_range, max_depth_range, min_samples_split_range, min_samples_leaf_range, max_features):
+        return {
+            'n_estimators': randint(*estimator_range),
+            'max_depth': [None] + list(range(*max_depth_range)),
+            'min_samples_split': randint(*min_samples_split_range),
+            'min_samples_leaf': randint(*min_samples_leaf_range),
+            'max_features': list(max_features),
         }
+
+    def _report_cv_results(self, verbose=False):
+        if self.cv_results is None:
+            return
+        cols = [c for c in self.cv_results.columns if "split" in c and "test_score" in c]
+        if verbose:
+            print(self.cv_results[cols + ["mean_test_score", "std_test_score"]])
+    
+    def tune(self, tune_config: TuneConfig):
+        param_dist = tune_config.param_distributions()
+        search_kwargs = tune_config.random_search_kwargs()
 
         rand_search = RandomizedSearchCV(
             estimator=self.model,
             param_distributions=param_dist,
-            n_iter=n_iter,
-            cv=cv,
-            scoring=scoring,
-            n_jobs=n_jobs,
-            verbose=verbose,
-            random_state=self.random_state
+            **search_kwargs,
         )
 
         rand_search.fit(self.X_train, self.y_train)
         self.model = rand_search.best_estimator_
-
         self.cv_results = pd.DataFrame(rand_search.cv_results_)
-        cols = [c for c in self.cv_results.columns if "split" in c and "test_score" in c]
-        print(self.cv_results[cols + ["mean_test_score", "std_test_score"]])
-        return self.model
 
     def evaluate(self, verbose = True):
         y_train_pred = self.model.predict(self.X_train)
@@ -137,11 +152,9 @@ class BaseModel:
 
     def plot_learning_curve(self):
         if self.X is None:
-            print("X is None")
-            return 
+            raise PipelineStateError("Training data has not been initialized")
         if self.y is None:
-            print("y is None")
-            return 
+            raise PipelineStateError("Training data has not been initialized")
         train_sizes, train_scores, test_scores = learning_curve(
         self.model, self.X, self.y, cv=5,
         train_sizes=np.linspace(0.1, 1.0, 10),  # 10% incr
