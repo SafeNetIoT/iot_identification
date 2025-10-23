@@ -35,6 +35,7 @@ class DatasetPreparation:
         return df
 
     def prepare_df(self, device_df, label):
+        """Function only useful if processing intermediate data in /preprocess directory"""
         pruned_df = self.prune_features(device_df)
         labeled_df = self.label_device(pruned_df, label)
         return self.clean_up(labeled_df)
