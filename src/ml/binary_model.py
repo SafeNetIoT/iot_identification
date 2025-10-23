@@ -15,20 +15,21 @@ class BinaryModel(Manager):
 
     def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None):
         super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
-        self.data_directory = RAW_DATA_DIRECTORY
+        self.data_path = Path(RAW_DATA_DIRECTORY)
+        self.cache_path = Path(SESSION_CACHE_PATH)
         self.device_sessions = defaultdict(list)
-        self.cache_directory = SESSION_CACHE_PATH
         random.seed(self.random_state)
+        self.prepare_sessions()
 
     def save_session(self):
-        root = zarr.open(Path(self.cache_directory) / "sessions.zarr", mode="w")
+        root = zarr.open(self.cache_path / "sessions.zarr", mode="w")
         for device, sessions in self.device_sessions.items():
             group = root.create_group(device)
             for i, df in enumerate(sessions):
                 group.create_dataset(f"session_{i:05d}", data=df.to_records(index=False))
 
     def load_sessions(self):
-        root = zarr.open(Path(self.cache_directory) / "sessions.zarr", mode="r")
+        root = zarr.open(self.cache_path / "sessions.zarr", mode="r")
         sessions = {}
         for device in root.group_keys():
             device_group = root[device]
@@ -37,7 +38,7 @@ class BinaryModel(Manager):
         return sessions
     
     def prepare_sessions(self):
-        self.cache_path = Path(self.cache_directory)
+        self.cache_path = self.cache_path
         if self.cache_path.exists() and any(self.cache_path.iterdir()):
             self.device_sessions = self.load_sessions()
             return
@@ -70,22 +71,19 @@ class BinaryModel(Manager):
             true_class.append(labeled_df)
         return true_class
 
-    def prepare_datasets(self):
+    def prepare_datasets(self, verbose=False):
         for device_name in self.device_sessions:
             true_class = self.prepare_true_class(device_name)
             true_class_num_sessions = len(self.device_sessions[device_name])
             records_per_session = max(1, true_class_num_sessions // max(1, len(self.device_sessions) - 1))
             false_class = self.sample_false_class(device_name, records_per_session)
-            print("true class length:", len(true_class))
-            print("false class length:", len(false_class))
-            print()
             data = true_class + false_class
+            if verbose:
+                print(device_name, f"true class length: {len(true_class)}, false class length: {len(false_class)}")
             record = ModelRecord(name=device_name, data=data)
             self.records.append(record)
-        print(len(self.records))
 
-    def add_device(self, device_name, device_directory):
-        self.prepare_sessions()
+    def add_device(self, device_name, device_directory, verbose=False):
         device_path = Path(device_directory)
         if not device_path.exists():
             raise FileNotFoundError(f"Device directory not found: {device_path}")
@@ -100,14 +98,11 @@ class BinaryModel(Manager):
             true_class.append(session)
 
         false_class = self.sample_false_class(device_name, len(true_class))
-        print("true class length:", len(true_class))
-        print("false class length:", len(false_class))
-        print()
         dataset = true_class + false_class
-        print("dataset length:", len(dataset))
+        if verbose:
+            print(device_name, f"true class length: {len(true_class)}, false class length: {len(false_class)}")
         record = ModelRecord(device_name, dataset)
         self.records.append(record)
-
         self.train_classifier(record, show_curve=True)
         self.save_classifier(record)
 
@@ -115,17 +110,13 @@ def main():
     # manager = BinaryModel()
     # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
 
-    # manager = BinaryModel()
-    # manager.prepare_sessions()
-    # for key, val in manager.device_sessions.items():
-    #     print(key, len(val))
-    #     print()
-    # manager.prepare_datasets()
-    # manager.train_all()
-    # manager.save_all()
+    manager = BinaryModel()
+    manager.prepare_datasets()
+    manager.train_all()
+    manager.save_all()
 
-    manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
-    manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")
+    # manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
+    # manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")
 
 
 if __name__ == "__main__":
