@@ -1,14 +1,7 @@
-import os
-import pandas as pd
-from config import RAW_DATA_DIRECTORY, SESSION_CACHE_PATH
-import pandas as pd
-import os
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
 from pathlib import Path
-from collections import defaultdict
 import random
-import zarr
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
