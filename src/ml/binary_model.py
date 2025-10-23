@@ -13,8 +13,8 @@ import zarr
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
 
-    def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None):
-        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
+    def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None, loading_dir=None):
+        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory, loading_directory=loading_dir)
         self.data_path = Path(RAW_DATA_DIRECTORY)
         self.cache_path = Path(SESSION_CACHE_PATH)
         self.device_sessions = defaultdict(list)
