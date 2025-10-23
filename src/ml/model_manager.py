@@ -1,6 +1,5 @@
 import os
-import pandas as pd
-from typing import Dict
+from pandas.errors import EmptyDataError
 from src.ml.base_model import BaseModel
 from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY
 from src.ml.dataset_preparation import DatasetPreparation
@@ -11,12 +10,13 @@ from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
 
 class Manager:
-    def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None):
+    def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
         self.architecture = MODEL_ARCHITECTURES[architecture_name]
         self.data_prep = DatasetPreparation()
         self.records: List[ModelRecord] = []
         self.random_state = RANDOM_STATE            
         self.output_directory = output_directory if output_directory is not None else MODELS_DIRECTORY
+        self.loading_directory = loading_directory
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
         self.fast_extractor = FastExtractionPipeline()
@@ -109,22 +109,22 @@ class Manager:
             self.save_average_accuracies()
 
     def load_model(self):
-        if not os.path.exists(self.output_directory): 
-            raise ValueError("Model has to be saved before it is loaded")
-        return [joblib.load(f"{self.output_directory}/{file}") for file in os.listdir(self.output_directory) if file.endswith(".pkl")]
+        if self.loading_directory is None: 
+            raise ValueError("Loading directory has not been specified")
+        if not os.path.exists(self.loading_directory):
+            raise FileNotFoundError("Model has to be saved before it is loaded")
+        return [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
 
     def predict(self, pcap_file):
         X = self.fast_extractor.extract_features(pcap_file)
         if X.empty:
-            print("Empty variable")
-            return 
+            raise EmptyDataError("PCAP file is empty")
         model_arr = self.load_model()
         result_class, score = None, 0
         for model in model_arr:
             predicted_class, confidence = model.predict(X)
             if predicted_class == 0:
                 continue
-            print(model.name, predicted_class, confidence)
             if confidence > score:
                 result_class, score = model.name, confidence
         return result_class
