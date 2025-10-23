@@ -15,44 +15,6 @@ class BinaryModel(Manager):
 
     def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None, loading_dir=None):
         super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory, loading_directory=loading_dir)
-        self.data_path = Path(RAW_DATA_DIRECTORY)
-        self.cache_path = Path(SESSION_CACHE_PATH)
-        self.device_sessions = defaultdict(list)
-        random.seed(self.random_state)
-        self.prepare_sessions()
-
-    def save_session(self):
-        root = zarr.open(self.cache_path / "sessions.zarr", mode="w")
-        for device, sessions in self.device_sessions.items():
-            group = root.create_group(device)
-            for i, df in enumerate(sessions):
-                group.create_dataset(f"session_{i:05d}", data=df.to_records(index=False))
-
-    def load_sessions(self):
-        root = zarr.open(self.cache_path / "sessions.zarr", mode="r")
-        sessions = {}
-        for device in root.group_keys():
-            device_group = root[device]
-            dfs = [pd.DataFrame(ds[:]) for ds in device_group.values()]
-            sessions[device] = dfs
-        return sessions
-    
-    def prepare_sessions(self):
-        self.cache_path = self.cache_path
-        if self.cache_path.exists() and any(self.cache_path.iterdir()):
-            self.device_sessions = self.load_sessions()
-            return
-            
-        data_directory = Path(self.data_directory)
-        for device_pcap in data_directory.rglob("*.pcap"):
-            device_name = device_pcap.parent.parent.name
-            unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
-            if unlabeled_device_df.empty:
-                continue
-            labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
-            labeled_df.attrs['pcap_path'] = str(device_pcap)
-            self.device_sessions[device_name].append(labeled_df)
-        self.save_session()
 
     def sample_false_class(self, current_device_name, sessions_per_class):
         sampled_dfs = []

@@ -1,13 +1,18 @@
 import os
 from pandas.errors import EmptyDataError
 from src.ml.base_model import BaseModel
-from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY
+from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY, RAW_DATA_DIRECTORY, SESSION_CACHE_PATH
 from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
 import joblib
 from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
+import pandas as pd
+import zarr
+from pathlib import Path
+from collections import defaultdict
+import random
 
 class Manager:
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
@@ -21,6 +26,43 @@ class Manager:
         self.manager_name = manager_name
         self.fast_extractor = FastExtractionPipeline()
         self.model_directory = None
+        self.data_path = Path(RAW_DATA_DIRECTORY)
+        self.cache_path = Path(SESSION_CACHE_PATH)
+        self.device_sessions = defaultdict(list)
+        random.seed(self.random_state)
+        self.prepare_sessions()
+
+    def save_session(self):
+        root = zarr.open(self.cache_path / "sessions.zarr", mode="w")
+        for device, sessions in self.device_sessions.items():
+            group = root.create_group(device)
+            for i, df in enumerate(sessions):
+                group.create_dataset(f"session_{i:05d}", data=df.to_records(index=False))
+
+    def load_sessions(self):
+        root = zarr.open(self.cache_path / "sessions.zarr", mode="r")
+        sessions = {}
+        for device in root.group_keys():
+            device_group = root[device]
+            dfs = [pd.DataFrame(ds[:]) for ds in device_group.values()]
+            sessions[device] = dfs
+        return sessions
+    
+    def prepare_sessions(self):
+        self.cache_path = self.cache_path
+        if self.cache_path.exists() and any(self.cache_path.iterdir()):
+            self.device_sessions = self.load_sessions()
+            return
+            
+        for device_pcap in self.data_path.rglob("*.pcap"):
+            device_name = device_pcap.parent.parent.name
+            unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
+            if unlabeled_device_df.empty:
+                continue
+            labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
+            labeled_df.attrs['pcap_path'] = str(device_pcap)
+            self.device_sessions[device_name].append(labeled_df)
+        self.save_session()
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
