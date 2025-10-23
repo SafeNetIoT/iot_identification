@@ -4,6 +4,18 @@ import pandas as pd
 from typing import Optional
 import joblib
 
+def assert_save_calls(mock_save, expected_names):
+    """Ensure save_classifier was called with expected record names."""
+    saved_records = [call.args[0] for call in mock_save.call_args_list]
+    saved_names = [r.name for r in saved_records]
+    assert set(saved_names) == set(expected_names), f"Expected {expected_names}, got {saved_names}"
+
+def assert_save_paths(mock_save, expected_dir):
+    """Ensure save paths start with the expected output directory."""
+    for call in mock_save.call_args_list:
+        record = call.args[0]
+        assert record.name in str(expected_dir), f"{record.name} not saved in {expected_dir}"
+
 def list_device_dirs(raw_dir: str) -> list[str]:
     """Return all .pcap files in the raw directory."""
     return [f for f in os.listdir(raw_dir)]
@@ -65,8 +77,8 @@ def run_model_workflow_test(manager, tmp_path):
     eval_files = list(tmp_path.rglob("*evaluation*.txt"))
     assert eval_files, "Expected evaluation output file(s)"
 
-    # model = joblib.load(model_files[0])
-    # assert hasattr(model, "predict"), "Model object missing predict() method"
+    model = joblib.load(model_files[0])
+    assert hasattr(model, "predict"), "Model object missing predict() method"
 
     # Data sanity
     assert manager.records, "Manager should have records"
