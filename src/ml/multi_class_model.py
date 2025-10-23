@@ -6,8 +6,8 @@ import pandas as pd
 
 class MultiClassModel(Manager):
     """Trains a single multiclass model for all devices combined."""
-    def __init__(self, architecture_name="standard_forest", manager_name="multiclass_model", output_directory=None):
-        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
+    def __init__(self, architecture_name="standard_forest", manager_name="multiclass_model", output_dir=None, loading_dir=None):
+        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_dir, loading_directory=loading_dir)
 
     def add_device(self, data):
         record = ModelRecord(self.manager_name, data)
