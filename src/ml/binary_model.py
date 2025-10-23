@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from config import RAW_DATA_DIRECTORY
+from config import RAW_DATA_DIRECTORY, SESSION_CACHE_PATH
 import pandas as pd
 import os
 from src.ml.model_manager import Manager
@@ -8,6 +8,7 @@ from src.ml.model_record import ModelRecord
 from pathlib import Path
 from collections import defaultdict
 import random
+import zarr
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -16,9 +17,31 @@ class BinaryModel(Manager):
         super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
         self.data_directory = RAW_DATA_DIRECTORY
         self.device_sessions = defaultdict(list)
+        self.cache_directory = SESSION_CACHE_PATH
         random.seed(self.random_state)
 
+    def save_session(self):
+        root = zarr.open(Path(self.cache_directory) / "sessions.zarr", mode="w")
+        for device, sessions in self.device_sessions.items():
+            group = root.create_group(device)
+            for i, df in enumerate(sessions):
+                group.create_dataset(f"session_{i:05d}", data=df.to_records(index=False))
+
+    def load_sessions(self):
+        root = zarr.open(Path(self.cache_directory) / "sessions.zarr", mode="r")
+        sessions = {}
+        for device in root.group_keys():
+            device_group = root[device]
+            dfs = [pd.DataFrame(ds[:]) for ds in device_group.values()]
+            sessions[device] = dfs
+        return sessions
+    
     def prepare_sessions(self):
+        self.cache_path = Path(self.cache_directory)
+        if self.cache_path.exists() and any(self.cache_path.iterdir()):
+            self.device_sessions = self.load_sessions()
+            return
+            
         data_directory = Path(self.data_directory)
         for device_pcap in data_directory.rglob("*.pcap"):
             device_name = device_pcap.parent.parent.name
@@ -28,8 +51,7 @@ class BinaryModel(Manager):
             labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
             labeled_df.attrs['pcap_path'] = str(device_pcap)
             self.device_sessions[device_name].append(labeled_df)
-            if not os.path.exists(f"extracted_features/{device_name}.vsv"):
-                labeled_df.to_csv(f"extracted_features/{device_name}.csv", index=False)
+        self.save_session()
 
     def sample_false_class(self, current_device_name, sessions_per_class):
         sampled_dfs = []
@@ -63,6 +85,7 @@ class BinaryModel(Manager):
         print(len(self.records))
 
     def add_device(self, device_name, device_directory):
+        self.prepare_sessions()
         device_path = Path(device_directory)
         if not device_path.exists():
             raise FileNotFoundError(f"Device directory not found: {device_path}")
@@ -74,10 +97,12 @@ class BinaryModel(Manager):
             if session.empty:
                 continue
             session = self.data_prep.label_device(session, 1)
-            session = self.data_prep.clean_up(session)
             true_class.append(session)
 
         false_class = self.sample_false_class(device_name, len(true_class))
+        print("true class length:", len(true_class))
+        print("false class length:", len(false_class))
+        print()
         dataset = true_class + false_class
         print("dataset length:", len(dataset))
         record = ModelRecord(device_name, dataset)
