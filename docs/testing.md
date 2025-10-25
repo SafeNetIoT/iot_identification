@@ -21,9 +21,9 @@ The test suite follows two complementary principles:
 
 ## Test Files
 
-### test_binary_model.py
+### test_model.py
 
-Integration tests verifying the saving logic and the performance on unseen data. Contains a unit test for handling loading non-existent.
+Integration tests verifying the saving logic and the performance on unseen data. Contains a unit test for handling loading non-existent. Focused on binary model, but provides also a test for the multiclass model.
 
 
 ### test_extraction.py
