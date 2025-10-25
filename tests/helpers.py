@@ -4,18 +4,6 @@ import pandas as pd
 from typing import Optional
 import joblib
 
-def assert_save_calls(mock_save, expected_names):
-    """Ensure save_classifier was called with expected record names."""
-    saved_records = [call.args[0] for call in mock_save.call_args_list]
-    saved_names = [r.name for r in saved_records]
-    assert set(saved_names) == set(expected_names), f"Expected {expected_names}, got {saved_names}"
-
-def assert_save_paths(mock_save, expected_dir):
-    """Ensure save paths start with the expected output directory."""
-    for call in mock_save.call_args_list:
-        record = call.args[0]
-        assert record.name in str(expected_dir), f"{record.name} not saved in {expected_dir}"
-
 def list_device_dirs(raw_dir: str) -> list[str]:
     """Return all .pcap files in the raw directory."""
     return [f for f in os.listdir(raw_dir)]
@@ -59,29 +47,3 @@ def count_input_conversations(pcap_path: str) -> int:
     """Placeholder for conversation counting logic."""
     csv_path = pcap_path.replace(".pcap", ".csv")
     return len(pd.read_csv(csv_path))
-
-def run_model_workflow_test(manager, tmp_path):
-    """
-    Generic test for ML model managers:
-    - Runs preprocess/prepare_datasets or equivalent
-    - Trains and saves all models
-    - Asserts that model and evaluation files exist
-    - Checks that preprocessed data is non-empty
-    """
-
-    manager.train_all()
-    manager.save_all()
-    model_files = list(tmp_path.rglob("*.pkl"))
-    assert model_files, "Expected trained model files in output directory"
-
-    eval_files = list(tmp_path.rglob("*evaluation*.txt"))
-    assert eval_files, "Expected evaluation output file(s)"
-
-    model = joblib.load(model_files[0])
-    assert hasattr(model, "predict"), "Model object missing predict() method"
-
-    # Data sanity
-    assert manager.records, "Manager should have records"
-    first_df = manager.records[0].data
-    assert isinstance(first_df, pd.DataFrame)
-    assert not first_df.empty, "Prepared dataset is empty"

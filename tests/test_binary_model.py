@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 from sklearn.ensemble import RandomForestClassifier
 import joblib 
 import random
-from tests.dummy_model import DummyModel
+from conftest import DummyModel
 from datetime import datetime
 
 @pytest.mark.integration
