@@ -26,3 +26,5 @@ RANDOM_STATE = CONFIG['random_state']
 TEST_FRACTION = CONFIG['testing']['sample_fraction'] if CONFIG['testing']['fast_mode'] else 1
 MODEL_UNDER_TEST = CONFIG['model_under_test']
 SESSION_CACHE_PATH = CONFIG['session_cache_path']
+DESIRED_ACCURACY = CONFIG['desired_accuracy']
+UNSEEN_FRACTION = CONFIG['unseen_fraction']

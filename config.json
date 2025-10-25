@@ -23,9 +23,11 @@
         }
     },
     "random_state":42,
+    "unseen_fraction":0.1,
     "testing":{
         "fast_mode":1,
         "sample_fraction":0.1
     },
-    "model_under_test":"models/2025-10-23/binary_model5"
+    "model_under_test":"models/2025-10-23/binary_model5",
+    "desired_accuracy":0.85
 }
