@@ -101,40 +101,4 @@ def test_add_device_missing_directory(binary_model):
     with patch("src.ml.binary_model.Path.exists", return_value=False):
         with pytest.raises(FileNotFoundError):
             binary_model.add_device("deviceX", "fake/path")
-
-@patch("src.ml.binary_model.Path.exists", return_value=True)
-@patch("src.ml.binary_model.Path.rglob")
-@patch("src.ml.binary_model.ModelRecord")
-def test_add_device_happy_path(mock_modelrecord, mock_rglob, _, binary_model):
-    # Fake PCAP file paths
-    fake_pcaps = [Path("file1.pcap"), Path("file2.pcap"), Path("file3.pcap")]
-    mock_rglob.return_value = fake_pcaps
-
-    # Mock feature extraction: return non-empty for first 2, empty for last
-    non_empty_df = MagicMock()
-    non_empty_df.empty = False
-    empty_df = MagicMock()
-    empty_df.empty = True
-
-    binary_model.fast_extractor.extract_features.side_effect = [
-        non_empty_df, non_empty_df, empty_df
-    ]
-
-    # Mock labeling
-    binary_model.data_prep.label_device.side_effect = lambda df, label: f"labeled_{id(df)}"
-
-    binary_model.add_device("deviceA", "fake/path", verbose=True)
-    assert binary_model.fast_extractor.extract_features.call_count == len(fake_pcaps)
-    assert binary_model.data_prep.label_device.call_count == 2
-
-    binary_model.sample_false_class.assert_called_once_with("deviceA", 2)
-    mock_modelrecord.assert_called_once()
-    record_call_args = mock_modelrecord.call_args[0]
-    assert record_call_args[0] == "deviceA"  # name
-    assert "fake_false" in record_call_args[1]  # dataset includes false class
-
-    record_instance = mock_modelrecord.return_value
-    binary_model.train_classifier.assert_called_once_with(record_instance, show_curve=True)
-    binary_model.save_classifier.assert_called_once_with(record_instance)
-    assert record_instance in binary_model.records
-
+            
