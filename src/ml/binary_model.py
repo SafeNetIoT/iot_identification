@@ -2,6 +2,9 @@ from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
 from pathlib import Path
 import random
+import os 
+import joblib
+from pandas.errors import EmptyDataError
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -60,6 +63,27 @@ class BinaryModel(Manager):
         self.records.append(record)
         self.train_classifier(record, show_curve=True)
         self.save_classifier(record)
+
+    def load_model(self):
+        if self.loading_directory is None: 
+            raise ValueError("Loading directory has not been specified")
+        if not os.path.exists(self.loading_directory):
+            raise FileNotFoundError("Model has to be saved before it is loaded")
+        return [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
+
+    def predict(self, pcap_file):
+        X = self.fast_extractor.extract_features(pcap_file)
+        if X.empty:
+            raise EmptyDataError("PCAP file is empty")
+        model_arr = self.load_model()
+        result_class, score = None, 0
+        for model in model_arr:
+            predicted_class, confidence = model.predict(X)
+            if predicted_class == 0:
+                continue
+            if confidence > score:
+                result_class, score = model.name, confidence
+        return result_class
 
 def main():
     # manager = BinaryModel()
