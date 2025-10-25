@@ -131,7 +131,7 @@ class Manager:
     def save_average_accuracies(self):
         avg_train_acc = self.total_train_acc / len(self.records)
         avg_test_acc = self.total_test_acc / len(self.records)
-        with open(f"{self.model_directory}/z_evalutation.txt", 'a') as file:
+        with open(f"{self.model_directory}/z_evaluation.txt", 'a') as file:
             file.write("\n=== Average Accuracies ===\n")
             file.write(f"Average Train Accuracy: {avg_train_acc:.4f}\n")
             file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
