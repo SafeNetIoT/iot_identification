@@ -38,30 +38,43 @@ class Manager:
         root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
         for device, sessions in cache.items():
             group = root.create_group(device)
-            for i, df in enumerate(sessions):
-                group.create_dataset(f"session_{i:05d}", data=df.to_records(index=False))
+            for i, item in enumerate(sessions):
+                if isinstance(item, pd.DataFrame):
+                    group.create_dataset(f"session_{i:05d}", data=item.to_records(index=False))
+                elif isinstance(item, (str, Path)):
+                    group.create_dataset(f"session_{i:05d}", data=str(item))
+                else:
+                    raise TypeError(f"Unsupported item type {type(item)} in cache for {device}")
 
     def load_sessions(self, cache_name):
         root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
         sessions = {}
         for device in root.group_keys():
             device_group = root[device]
-            dfs = [pd.DataFrame(ds[:]) for ds in device_group.values()]
-            sessions[device] = dfs
+            loaded = []
+            for ds in device_group.values():
+                if ds.dtype.names:
+                    loaded.append(pd.DataFrame(ds[:]))
+                else:
+                    val = ds[()]  # scalar read (not slicing)
+                    if isinstance(val, bytes):
+                        val = val.decode()
+                    loaded.append(Path(val))
+            sessions[device] = loaded
         return sessions
-    
+
     def map_sessions(self):
         for device_pcap in self.data_path.rglob("*.pcap"):
             device_name = device_pcap.parent.parent.name
             unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
             if unlabeled_device_df.empty:
                 continue
+            if random.random() < self.unseen_fraction:
+                self.unseen_sessions[device_name].append(device_pcap)
+                continue
             labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
             labeled_df.attrs['pcap_path'] = str(device_pcap)
-            if random.random() < self.unseen_fraction:
-                self.unseen_sessions[device_name].append(labeled_df)
-            else:
-                self.device_sessions[device_name].append(labeled_df)
+            self.device_sessions[device_name].append(labeled_df)
 
     def prepare_sessions(self):
         if self.cache_path.exists() and any(self.cache_path.iterdir()):
