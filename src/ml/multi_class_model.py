@@ -14,30 +14,40 @@ class MultiClassModel(Manager):
         data = []
         for device_name, sessions in self.device_sessions.items():
             sessions = [self.data_prep.label_device(session, device_name) for session in sessions]
+            print(sessions[0].head())
             data.extend(sessions)
+        print(type(data))
+        print(type(data[0]))
         record = ModelRecord(name="multiclass_model", data=data)
         self.records.append(record)
         self.train_all()
         self.save_all(save_input_data=True)
-        # self.train_classifier(record)
-        # self.save_classifier(record, save_input_data=True)
 
     def multi_predict(self, pcap_file): # if more than 1
         model_arr = self.load_model()
-        model = model_arr[0].model
+        model = model_arr[0]
+        # print(model.classes_)
         df = self.fast_extractor.extract_features(pcap_file)
+        # print("features:", df.columns)
         if df.empty:
             return None
-        return pd.Series(model.predict(df)).mode()[0]
+        df_scaled = pd.DataFrame(model.scaler.transform(df), columns=df.columns)
+        probas = model.model.predict_proba(df_scaled)
+        mean_proba = probas.mean(axis=0)
+        best_idx = mean_proba.argmax()
+        predicted_class = model.model.classes_[best_idx]
+        confidence = mean_proba[best_idx]
+        return predicted_class
 
 
 def main(): # still shows incorrect results
     # manager = MultiClassModel()
     # manager.run()
 
-    # manager = MultiClassModel(loading_dir="models/2025-10-23/multiclass_model8")
+    # manager = MultiClassModel(loading_dir="models/2025-10-25/multiclass_model5/")
     # res = manager.multi_predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
     # print("res:", res)
+
 
     from pathlib import Path
     from config import RAW_DATA_DIRECTORY
