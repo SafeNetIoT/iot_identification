@@ -1,10 +1,8 @@
-from src.ml.binary_model import BinaryModel
-from config import RAW_DATA_DIRECTORY, MODEL_UNDER_TEST, DESIRED_ACCURACY, TEST_FRACTION, RANDOM_STATE
+from config import DESIRED_ACCURACY, TEST_FRACTION, RANDOM_STATE
 import pytest
 from pathlib import Path
 from pandas.errors import EmptyDataError
 from unittest.mock import patch, MagicMock
-from tests.helpers import assert_save_calls, assert_save_paths
 from sklearn.ensemble import RandomForestClassifier
 import joblib 
 import random
@@ -76,11 +74,10 @@ def test_slow_pipeline(binary_model, tmp_path):
         assert isinstance(model.model, RandomForestClassifier)
 
 @pytest.mark.integration
-def test_unseen():
+def test_unseen(binary_model_under_test):
     random.seed(RANDOM_STATE)
     correct, total = 0, 0
-    manager = BinaryModel(loading_dir=MODEL_UNDER_TEST)
-    for device_name, pcap_list in manager.unseen_sessions.items():
+    for device_name, pcap_list in binary_model_under_test.unseen_sessions.items():
         if not pcap_list:
             continue
         print("pcap_list length:", len(pcap_list))
@@ -88,7 +85,7 @@ def test_unseen():
         sampled_pcaps = random.sample(pcap_list, n_samples)
         for pcap_path in sampled_pcaps:
             try:
-                prediction = manager.predict(str(pcap_path))
+                prediction = binary_model_under_test.predict(str(pcap_path))
                 print("device name:", device_name)
                 print("prediction:", prediction)
             except EmptyDataError:
@@ -98,7 +95,7 @@ def test_unseen():
             total += 1
     acc = correct / total
     print(acc)
-    assert acc >= DESIRED_ACCURACY
+    assert acc >= DESIRED_ACCURACY, "Accuracy lower than desired"
 
 def test_add_device_missing_directory(binary_model):
     with patch("src.ml.binary_model.Path.exists", return_value=False):

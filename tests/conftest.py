@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from src.ml.binary_model import BinaryModel
+from sklearn.ensemble import RandomForestClassifier
+from config import MODEL_UNDER_TEST
 
 @pytest.fixture
 def fake_device_sessions():
@@ -30,9 +32,26 @@ def binary_model():
     return model
 
 @pytest.fixture
+def binary_model_under_test():
+    """Creates a binary model instance with a loaded model specified in config"""
+    model = BinaryModel(loading_dir=MODEL_UNDER_TEST)
+    return model
+
+@pytest.fixture
 def mock_modelrecord():
     """Mocks ModelRecord to intercept dataset creation."""
     with patch("src.ml.binary_model.ModelRecord") as mock_record_cls:
         mock_record = MagicMock()
         mock_record_cls.return_value = mock_record
         yield mock_record_cls
+
+class DummyModel:
+    def __init__(self):
+        self.model = RandomForestClassifier()
+        self.cv_results = None
+        self.train_acc = 1.0
+        self.test_acc = 1.0
+        self.report = "OK"
+        self.confusion_matrix = [[1]]
+        self.X_test = None
+        self.y_test = None
