@@ -72,7 +72,8 @@ class BaseModel:
         train_paths = {df.attrs.get("pcap_path") for df in train_sessions}
         test_paths = {df.attrs.get("pcap_path") for df in test_sessions}
         overlap = train_paths & test_paths
-        if overlap != {None}:
+        overlap = {val for val in overlap if val != None}
+        if overlap != set():
             raise DataLeakageError(f"Data leakage detected between training and test data: {overlap}")
 
     def split(self):

@@ -1,7 +1,7 @@
 import os
 from pandas.errors import EmptyDataError
 from src.ml.base_model import BaseModel
-from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY, RAW_DATA_DIRECTORY, SESSION_CACHE_PATH
+from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY, RAW_DATA_DIRECTORY, SESSION_CACHE_PATH, UNSEEN_FRACTION
 from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
@@ -29,18 +29,20 @@ class Manager:
         self.data_path = Path(RAW_DATA_DIRECTORY)
         self.cache_path = Path(SESSION_CACHE_PATH)
         self.device_sessions = defaultdict(list)
+        self.unseen_sessions = defaultdict(list)
+        self.unseen_fraction = UNSEEN_FRACTION
         random.seed(self.random_state)
         self.prepare_sessions()
 
-    def save_session(self):
-        root = zarr.open(self.cache_path / "sessions.zarr", mode="w")
-        for device, sessions in self.device_sessions.items():
+    def save_session(self, cache, cache_name):
+        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
+        for device, sessions in cache.items():
             group = root.create_group(device)
             for i, df in enumerate(sessions):
                 group.create_dataset(f"session_{i:05d}", data=df.to_records(index=False))
 
-    def load_sessions(self):
-        root = zarr.open(self.cache_path / "sessions.zarr", mode="r")
+    def load_sessions(self, cache_name):
+        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
         sessions = {}
         for device in root.group_keys():
             device_group = root[device]
@@ -48,12 +50,7 @@ class Manager:
             sessions[device] = dfs
         return sessions
     
-    def prepare_sessions(self):
-        self.cache_path = self.cache_path
-        if self.cache_path.exists() and any(self.cache_path.iterdir()):
-            self.device_sessions = self.load_sessions()
-            return
-            
+    def map_sessions(self):
         for device_pcap in self.data_path.rglob("*.pcap"):
             device_name = device_pcap.parent.parent.name
             unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
@@ -61,8 +58,19 @@ class Manager:
                 continue
             labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
             labeled_df.attrs['pcap_path'] = str(device_pcap)
-            self.device_sessions[device_name].append(labeled_df)
-        self.save_session()
+            if random.random() < self.unseen_fraction:
+                self.unseen_sessions[device_name].append(labeled_df)
+            else:
+                self.device_sessions[device_name].append(labeled_df)
+
+    def prepare_sessions(self):
+        if self.cache_path.exists() and any(self.cache_path.iterdir()):
+            self.device_sessions = self.load_sessions("seen_sessions")
+            self.unseen_sessions = self.load_sessions("unseen_sessions")
+        else:
+            self.map_sessions()
+            self.save_session(self.device_sessions, "seen_sessions")
+            self.save_session(self.unseen_sessions, "unseen_sessions")
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
