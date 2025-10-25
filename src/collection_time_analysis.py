@@ -1,3 +1,7 @@
+"""
+Still WIP
+"""
+
 from src.features.feature_extraction import ExtractionPipeline
 import os
 from config import TIME_INTERVALS, RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY

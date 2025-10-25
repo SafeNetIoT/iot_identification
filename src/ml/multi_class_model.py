@@ -1,36 +1,77 @@
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
+from src.ml.base_model import BaseModel
 import os
 import pandas as pd
 
 
 class MultiClassModel(Manager):
-    """Trains a single multiclass model for all devices combined."""
-    def __init__(self, architecture_name="standard_forest", manager_name="multiclass_model", output_directory=None):
-        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
+    """Trains a single multiclass model for all devices combined. Still WIP. Gives okay results"""
+    def __init__(self, architecture_name="standard_forest", manager_name="multiclass_model", output_dir=None, loading_dir=None):
+        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_dir, loading_directory=loading_dir)
 
-    def add_device(self, data):
-        record = ModelRecord(self.manager_name, data)
+    def run(self):
+        data = []
+        for device_name, sessions in self.device_sessions.items():
+            sessions = [self.data_prep.label_device(session, device_name) for session in sessions]
+            data.extend(sessions)
+        record = ModelRecord(name="multiclass_model", data=data)
         self.records.append(record)
+        self.train_all()
+        self.save_all(save_input_data=True)
 
-    def preprocess(self):   
-        all_devices = []
-        for device_csv in os.listdir(self.data_prep.preprocessed_data_directory):
-            device_df = pd.read_csv(f"{self.data_prep.preprocessed_data_directory}/{device_csv}")
-            device_name = device_csv.split(".csv")[0]
-            # device_df = self.data_prep.label_device(self.data_prep.prune_features(device_df), device_name)
-            # device_df = self.data_prep.clean_up(device_df)
-            device_df = self.data_prep.prepare_df(device_df, device_name)
-            all_devices.append(device_df)
-        data = pd.concat(all_devices, ignore_index=True)
-        self.add_device(data)
+    def multi_predict(self, pcap_file):
+        model_arr = self.load_model()
+        model = model_arr[0]
+        df = self.fast_extractor.extract_features(pcap_file)
+        if df.empty:
+            return None
+        df_scaled = pd.DataFrame(model.scaler.transform(df), columns=df.columns)
+        probas = model.model.predict_proba(df_scaled)
+        mean_proba = probas.mean(axis=0)
+        best_idx = mean_proba.argmax()
+        predicted_class = model.model.classes_[best_idx]
+        confidence = mean_proba[best_idx]
+        return predicted_class
 
 
-def main():
-    manager = MultiClassModel()
-    manager.preprocess()
-    manager.train_all()
-    manager.save_all()
+def main(): # still shows incorrect results
+    # manager = MultiClassModel()
+    # manager.run()
+
+    # manager = MultiClassModel(loading_dir="models/2025-10-25/multiclass_model5/")
+    # res = manager.multi_predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+    # print("res:", res)
+
+
+    from pathlib import Path
+    from config import RAW_DATA_DIRECTORY
+    from pandas.errors import EmptyDataError
+    manager = MultiClassModel(loading_dir="models/2025-10-23/multiclass_model8")
+    prev = ""
+    correct, total = 0, 0
+    for subdir in Path(RAW_DATA_DIRECTORY).iterdir():
+        if not subdir.is_dir():
+            continue
+        for f in subdir.rglob("*"):
+            if f.is_file():
+                try:
+                    device = str(f).split("/")[2]
+                    if device == prev:
+                        continue
+                    print("truth:", device)
+                    res = manager.multi_predict(str(f))
+                    print("prediction", res)
+                    print()
+                    if res == device:
+                        correct += 1
+                    total += 1
+                except EmptyDataError:
+                    continue
+                except ValueError:
+                    continue
+                prev = device
+    print(correct, total)
 
 if __name__ == "__main__":
     main()

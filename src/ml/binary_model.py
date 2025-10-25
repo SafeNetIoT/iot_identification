@@ -1,83 +1,101 @@
-import os
-import pandas as pd
-from config import PREPROCESSED_DATA_DIRECTORY, MODEL_ARCHITECTURES
-import pandas as pd
-import os
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
-from src.features.fast_extraction import FastExtractionPipeline
-from src.ml.base_model import BaseModel
+from pathlib import Path
+import random
+import os 
+import joblib
+from pandas.errors import EmptyDataError
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
 
-    def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None):
-        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory)
-        self.device_csvs = [f.replace(".csv", "") for f in os.listdir(PREPROCESSED_DATA_DIRECTORY) if f.endswith(".csv")]
-        self.num_classes = len(self.device_csvs)
+    def __init__(self, architecture_name="standard_forest", manager_name="binary_model", output_directory=None, loading_dir=None):
+        super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_directory, loading_directory=loading_dir)
 
-    def sample_false_class(self, current_device_name, records_per_class):
+    def sample_false_class(self, current_device_name, sessions_per_class):
         sampled_dfs = []
-        for device_name in self.device_csvs:
+        for device_name, session_list in self.device_sessions.items():
             if device_name == current_device_name:
                 continue
-            device_path = f"{PREPROCESSED_DATA_DIRECTORY}/{device_name}.csv"
-            device_df = pd.read_csv(device_path)
-            pruned = self.data_prep.prune_features(device_df)
-            labeled = self.data_prep.label_device(pruned, 0)
-            sampled = labeled.sample(
-                n=min(records_per_class, len(labeled)),
-                random_state=self.random_state
-            )
-            sampled_dfs.append(sampled)
-        return pd.concat(sampled_dfs, ignore_index=True)
-
+            sample_size = min(sessions_per_class, len(session_list))
+            sampled = random.sample(session_list, sample_size)
+            sampled_dfs.extend(sampled)
+        return sampled_dfs
+            
     def prepare_true_class(self, current_device_name):
-        current_device_path = f"{PREPROCESSED_DATA_DIRECTORY}/{current_device_name}.csv"
-        device_df = pd.read_csv(current_device_path)
-        pruned = self.data_prep.prune_features(device_df)
-        labeled = self.data_prep.label_device(pruned, 1)
-        return labeled
+        true_class = []
+        for session in self.device_sessions[current_device_name]:
+            labeled_df = self.data_prep.label_device(session, 1)
+            true_class.append(labeled_df)
+        return true_class
 
-    def prepare_datasets(self):
-        for device_name in self.device_csvs:
-            pos_df = self.prepare_true_class(device_name)
-            records_per_class = max(1, len(pos_df) // max(1, self.num_classes - 1))
-            neg_df = self.sample_false_class(device_name, records_per_class)
-            data = pd.concat([pos_df, neg_df], ignore_index=True)
+    def prepare_datasets(self, verbose=False):
+        for device_name in self.device_sessions:
+            true_class = self.prepare_true_class(device_name)
+            true_class_num_sessions = len(self.device_sessions[device_name])
+            records_per_session = max(1, true_class_num_sessions // max(1, len(self.device_sessions) - 1))
+            false_class = self.sample_false_class(device_name, records_per_session)
+            data = true_class + false_class
+            if verbose:
+                print(device_name, f"true class length: {len(true_class)}, false class length: {len(false_class)}")
             record = ModelRecord(name=device_name, data=data)
             self.records.append(record)
 
-    def add_device(self, device_name, device_directory):
-        fast_extractor = FastExtractionPipeline()
-        input_data = []
+    def add_device(self, device_name, device_directory, verbose=False):
+        device_path = Path(device_directory)
+        if not device_path.exists():
+            raise FileNotFoundError(f"Device directory not found: {device_path}")
 
-        def dfs(directory):
-            if os.path.isfile(directory):
-                conversation_df = fast_extractor.extract_features(directory)
-                input_data.append(conversation_df)
-                return
-            for subdir in directory:
-                dfs(subdir)
+        pcap_files = list(device_path.rglob("*.pcap"))
+        true_class = []
+        for pcap_path in pcap_files:
+            session = self.fast_extractor.extract_features(str(pcap_path))
+            if session.empty:
+                continue
+            session = self.data_prep.label_device(session, 1)
+            true_class.append(session)
 
-        dfs(device_directory)
-        combined_df = pd.concat(input_data, ignore_index=True)
-        true_class = self.data_prep.label_device(self.data_prep.clean_up(combined_df), 1)
         false_class = self.sample_false_class(device_name, len(true_class))
-        new_record = ModelRecord(
-            device_name,
-            pd.concat([true_class, false_class], ignore_index=True)
-        )
-        # self.records.append(new_record)  
-        self.train_classifier(new_record, show_curve=True)
-        # self.save_classifier(new_record)          
+        dataset = true_class + false_class
+        if verbose:
+            print(device_name, f"true class length: {len(true_class)}, false class length: {len(false_class)}")
+        record = ModelRecord(device_name, dataset)
+        self.records.append(record)
+        self.train_classifier(record, show_curve=True)
+        self.save_classifier(record)
+
+    def load_model(self):
+        if self.loading_directory is None: 
+            raise ValueError("Loading directory has not been specified")
+        if not os.path.exists(self.loading_directory):
+            raise FileNotFoundError("Model has to be saved before it is loaded")
+        return [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
+
+    def predict(self, pcap_file):
+        X = self.fast_extractor.extract_features(pcap_file)
+        if X.empty:
+            raise EmptyDataError("PCAP file is empty")
+        model_arr = self.load_model()
+        result_class, score = None, 0
+        for model in model_arr:
+            predicted_class, confidence = model.predict(X)
+            if predicted_class == 0:
+                continue
+            if confidence > score:
+                result_class, score = model.name, confidence
+        return result_class
 
 def main():
+    # manager = BinaryModel()
+    # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
+
     manager = BinaryModel()
-    manager.add_device("alexa2", "data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
-    # manager.prepare_datasets()
-    # manager.train_all()
-    # manager.save_all()
+    manager.prepare_datasets()
+    manager.train_all()
+    manager.save_all()
+
+    # manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
+    # manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")
 
 
 if __name__ == "__main__":
