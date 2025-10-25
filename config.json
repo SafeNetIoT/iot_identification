@@ -29,5 +29,6 @@
         "sample_fraction":0.1
     },
     "model_under_test":"models/2025-10-25/binary_model1",
+    "multiclass_model_under_test":"models/2025-10-25/multiclass_model5",
     "desired_accuracy":0.85
 }

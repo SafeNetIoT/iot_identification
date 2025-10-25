@@ -14,21 +14,16 @@ class MultiClassModel(Manager):
         data = []
         for device_name, sessions in self.device_sessions.items():
             sessions = [self.data_prep.label_device(session, device_name) for session in sessions]
-            print(sessions[0].head())
             data.extend(sessions)
-        print(type(data))
-        print(type(data[0]))
         record = ModelRecord(name="multiclass_model", data=data)
         self.records.append(record)
         self.train_all()
         self.save_all(save_input_data=True)
 
-    def multi_predict(self, pcap_file): # if more than 1
+    def multi_predict(self, pcap_file):
         model_arr = self.load_model()
         model = model_arr[0]
-        # print(model.classes_)
         df = self.fast_extractor.extract_features(pcap_file)
-        # print("features:", df.columns)
         if df.empty:
             return None
         df_scaled = pd.DataFrame(model.scaler.transform(df), columns=df.columns)
