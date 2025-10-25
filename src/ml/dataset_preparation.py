@@ -16,9 +16,9 @@ class DatasetPreparation:
         device = device_df[keep_cols].copy()
         return device
 
-    def label_device(self, device_df, device_label):
-        device_df.loc[:, 'label'] = device_label
-        return device_df
+    @staticmethod
+    def label_device(device_df, device_label):
+        return device_df.assign(label=device_label)
 
     def clean_up(self, df: pd.DataFrame):
         if df is None or df.empty:
@@ -35,6 +35,7 @@ class DatasetPreparation:
         return df
 
     def prepare_df(self, device_df, label):
+        """Function only useful if processing intermediate data in /preprocess directory"""
         pruned_df = self.prune_features(device_df)
         labeled_df = self.label_device(pruned_df, label)
         return self.clean_up(labeled_df)

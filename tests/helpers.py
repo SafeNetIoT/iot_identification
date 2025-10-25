@@ -2,7 +2,9 @@ import random
 import os
 import pandas as pd
 from typing import Optional
-import joblib
+from config import RANDOM_STATE, DESIRED_ACCURACY, TEST_FRACTION
+from pandas.errors import EmptyDataError
+
 
 def list_device_dirs(raw_dir: str) -> list[str]:
     """Return all .pcap files in the raw directory."""
@@ -42,34 +44,30 @@ def validate_row_count(df: pd.DataFrame, pcap_path: str):
     expected = count_input_conversations(pcap_path)
     assert len(df) == expected, f"Row count mismatch for {pcap_path}: expected {expected}, got {len(df)}"
 
-
 def count_input_conversations(pcap_path: str) -> int:
     """Placeholder for conversation counting logic."""
     csv_path = pcap_path.replace(".pcap", ".csv")
     return len(pd.read_csv(csv_path))
 
-def run_model_workflow_test(manager, tmp_path):
-    """
-    Generic test for ML model managers:
-    - Runs preprocess/prepare_datasets or equivalent
-    - Trains and saves all models
-    - Asserts that model and evaluation files exist
-    - Checks that preprocessed data is non-empty
-    """
-
-    manager.train_all()
-    manager.save_all()
-    model_files = list(tmp_path.rglob("*.pkl"))
-    assert model_files, "Expected trained model files in output directory"
-
-    eval_files = list(tmp_path.rglob("*evaluation*.txt"))
-    assert eval_files, "Expected evaluation output file(s)"
-
-    # model = joblib.load(model_files[0])
-    # assert hasattr(model, "predict"), "Model object missing predict() method"
-
-    # Data sanity
-    assert manager.records, "Manager should have records"
-    first_df = manager.records[0].data
-    assert isinstance(first_df, pd.DataFrame)
-    assert not first_df.empty, "Prepared dataset is empty"
+def _run_unseen_evaluation(model, predict_func):
+    random.seed(RANDOM_STATE)
+    correct, total = 0, 0
+    for device_name, pcap_list in model.unseen_sessions.items():
+        if not pcap_list:
+            continue
+        print(f"Evaluating {device_name}: {len(pcap_list)} pcaps")
+        n_samples = max(1, int(len(pcap_list) * TEST_FRACTION))
+        sampled_pcaps = random.sample(pcap_list, n_samples)
+        for pcap_path in sampled_pcaps:
+            try:
+                prediction = predict_func(str(pcap_path))
+                print("device name:", device_name)
+                print("prediction:", prediction)
+            except EmptyDataError:
+                continue
+            if prediction == device_name:
+                correct += 1
+            total += 1
+    acc = correct / total if total > 0 else 0
+    print("Accuracy:", acc)
+    assert acc >= DESIRED_ACCURACY, "Accuracy lower than desired"

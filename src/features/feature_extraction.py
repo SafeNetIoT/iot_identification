@@ -198,8 +198,9 @@ class FeatureExtractor:
         return features.to_flat_dict()
 
 class FlowManager:
-    def __init__(self):
+    def __init__(self, extractor = FeatureExtractor):
         self.flows = {}
+        self.extractor = extractor
 
     def update_flow(self, pkt, ts):
         k = five_tuple(pkt)
@@ -223,7 +224,10 @@ class FlowManager:
     def evict(self, key):
         st = self.flows.pop(key, None)
         if st:
-            return FeatureExtractor(st).features_from_state()
+            features_from_state_method = getattr(self.extractor, "features_from_state")
+            if features_from_state_method is None or not callable(features_from_state_method):
+                raise ValueError("Extractor class needs a features from state method")
+            return self.extractor(st).features_from_state()
         return None
 
     def sweep(self, ts):
