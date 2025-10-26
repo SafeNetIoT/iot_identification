@@ -6,6 +6,7 @@
     "feature_menu_path":"src/features/feature_menu.yml",
     "models_directory":"models",
     "session_cache_path":"session_cache",
+    "unsw_dataset_path":"data/unsw_unzipped",
     "time_intervals": [10, 20, 30, 45, 60, 75, 90, 105],
     "internal_nets":["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
     "tcp_idle_s":300,
@@ -30,5 +31,6 @@
     },
     "model_under_test":"models/2025-10-25/binary_model1",
     "multiclass_model_under_test":"models/2025-10-25/multiclass_model5",
-    "desired_accuracy":0.85
+    "desired_accuracy":0.85,
+    "mac_address_map_path":"mac_address_map.json"
 }
