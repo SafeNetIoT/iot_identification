@@ -2,8 +2,9 @@ import random
 import os
 import pandas as pd
 from typing import Optional
-from config import RANDOM_STATE, DESIRED_ACCURACY, TEST_FRACTION
+from config import RANDOM_STATE, DESIRED_ACCURACY, TEST_FRACTION, MAC_ADDRESS_MAP_PATH
 from pandas.errors import EmptyDataError
+import json
 
 
 def list_device_dirs(raw_dir: str) -> list[str]:
@@ -71,3 +72,8 @@ def _run_unseen_evaluation(model, predict_func):
     acc = correct / total if total > 0 else 0
     print("Accuracy:", acc)
     assert acc >= DESIRED_ACCURACY, "Accuracy lower than desired"
+
+def get_mac_address_map():
+    with open(MAC_ADDRESS_MAP_PATH, 'r') as file:
+        mac_address_map = json.load(file)
+    return mac_address_map

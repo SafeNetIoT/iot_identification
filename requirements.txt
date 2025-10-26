@@ -7,4 +7,4 @@ scikit-learn
 joblib
 imblearn
 pytest
-zarr
+zarr<3
