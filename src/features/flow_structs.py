@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, is_dataclass, fields
 from src.features.stats import OnlineStats, EntropyCounter
 from config import K_PAYLOAD_BYTES
 

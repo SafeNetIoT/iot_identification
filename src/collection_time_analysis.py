@@ -9,7 +9,7 @@ import pandas as pd
 from src.ml.dataset_preparation import DatasetPreparation
 from src.ml.multi_class_model import MultiClassModel
 from scipy import stats
-from src.utils import unpack_features
+from src.utils.file_utils import unpack_features
 from itertools import combinations
 
 
@@ -45,7 +45,7 @@ class TestPipeline:
             manager = MultiClassModel()
             manager.add_device(input_data)
             manager.train_all()
-            manager.save_all()
+            # manager.save_all()
 
     def compare_time_intervals(self, cache: dict, alpha: float = 0.05):
         intervals = sorted(cache.keys())
@@ -80,7 +80,6 @@ class TestPipeline:
         print(f"Compared {len(results_df)} feature pairs across {len(intervals)} intervals.")
         print(f"Top differing features:\n{summary.head(10)}")
         return results_df, summary
-
 
     def test_windows(self):
         cache = {}
