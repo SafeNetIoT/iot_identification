@@ -171,6 +171,13 @@ class Manager:
         if len(self.records) > 1:
             self.save_average_accuracies()
 
+    def load_model(self):
+        if self.loading_directory is None: 
+            raise ValueError("Loading directory has not been specified")
+        if not os.path.exists(self.loading_directory):
+            raise FileNotFoundError("Model has to be saved before it is loaded")
+        return [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
+
         
 
 

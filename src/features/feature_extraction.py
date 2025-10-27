@@ -6,7 +6,7 @@ from config import RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY, MAX_AGE_S, S
 
 from src.features.flow_state import FlowState, FlowStateFactory
 from scapy.all import PcapReader
-from src.utils import is_internal, port_bucket, iot_service_id, discovery_proto_id, five_tuple, canonize
+from src.utils.network_utils import is_internal, port_bucket, iot_service_id, discovery_proto_id, five_tuple, canonize
 from src.features.flow_structs import (
     DirectionStats, TcpFlags, TlsInfo, Identifiers, PacketsStats, BytesStats, PacketLengthStats,
     IATStats, Ratios, PayloadStats, PresenceFlags, PortBuckets, IoTAdditions, TLSHints,

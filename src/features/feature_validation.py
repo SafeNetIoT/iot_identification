@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from statistics import mean
 import numpy as np
-from utils import unpack_feature_groups
+from utils.file_utils import unpack_feature_groups
 from config import PREPROCESSED_DATA_DIRECTORY
 import collections
 

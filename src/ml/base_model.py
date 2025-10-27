@@ -1,7 +1,7 @@
 from config import MODELS_DIRECTORY, RANDOM_STATE
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from src.utils import unpack_features
+from src.utils.file_utils import unpack_features
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from sklearn.model_selection import RandomizedSearchCV, learning_curve
@@ -11,7 +11,7 @@ from imblearn.over_sampling import RandomOverSampler
 from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
-from exceptions import DataLeakageError, PipelineStateError
+from src.utils.exceptions import DataLeakageError, PipelineStateError
 from src.ml.tune_config import TuneConfig
 
 class BaseModel:

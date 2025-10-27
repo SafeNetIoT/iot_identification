@@ -1,24 +1,7 @@
-from config import FEATURE_MENU_PATH, INTERNAL_NETS, VALID_FEATURES_DIRECTORY
-import yaml
+from config import INTERNAL_NETS
 from scapy.layers.inet import IP, TCP, UDP
 import ipaddress
 from scapy.layers.inet6 import IPv6
-from dataclasses import asdict, is_dataclass, fields
-
-def unpack_feature_groups():
-    with open(FEATURE_MENU_PATH, "r") as f:
-        data = yaml.safe_load(f)
-
-    feature_groups = []
-    for block in data:
-        if "Feature" in block:
-            feature_groups.append(block["Feature"])
-    return feature_groups
-
-def unpack_features():
-    with open(VALID_FEATURES_DIRECTORY, 'r') as file:
-        features = [line.strip() for line in file]
-    return features
 
 def is_internal(ip: str) -> bool:
     ip_obj = ipaddress.ip_address(ip) if not isinstance(ip, (ipaddress.IPv4Address, ipaddress.IPv6Address)) else ip
@@ -84,25 +67,3 @@ def canonize(k):
     """
     a = (k[0], k[1]); b = (k[2], k[3]); p = k[4]
     return (a, b, p) if a <= b else (b, a, p)
-
-def flatten(obj, parent_key="", sep="_"):
-    """
-    Flattens nested dataclasses and dicts into a single flat dict.
-    Drops all parent prefixes (so columns are flat like start_ts, src_ip, etc.).
-    """
-    items = {}
-
-    if is_dataclass(obj):
-        # Iterate directly over dataclass fields (do NOT use asdict)
-        obj = {f.name: getattr(obj, f.name) for f in fields(obj)}
-
-    for k, v in obj.items():
-        # no prefix at all — always flatten into top level
-        if is_dataclass(v) or isinstance(v, dict):
-            items.update(flatten(v, sep=sep))
-        else:
-            items[k] = v
-    return items
-
-if __name__ == "__main__":
-    print(unpack_feature_groups())
