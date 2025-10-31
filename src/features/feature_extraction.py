@@ -12,6 +12,7 @@ from src.features.flow_structs import (
     IATStats, Ratios, PayloadStats, PresenceFlags, PortBuckets, IoTAdditions, TLSHints,
     IoTPortVocab, Features
     )
+from src.features.session_registry import SessionRegistry
 
 class FeatureExtractor:
     def __init__(self, state: FlowState) -> None:
@@ -198,9 +199,10 @@ class FeatureExtractor:
         return features.to_flat_dict()
 
 class FlowManager:
-    def __init__(self, extractor = FeatureExtractor):
+    def __init__(self, extractor = FeatureExtractor, registry = SessionRegistry()):
         self.flows = {}
         self.extractor = extractor
+        self.registry = registry
 
     def update_flow(self, pkt, ts):
         k = five_tuple(pkt)
@@ -212,6 +214,7 @@ class FlowManager:
 
         if st is None:
             st = FlowStateFactory.create(ck, ts, first_src_ip=k[0])
+            self.registry.add_collection_time(st.last)
             self.flows[ck] = st
 
         st.update(pkt)
