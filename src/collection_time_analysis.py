@@ -6,46 +6,66 @@ from src.features.feature_extraction import ExtractionPipeline
 import os
 from config import TIME_INTERVALS, RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY
 import pandas as pd
-from src.ml.dataset_preparation import DatasetPreparation
+from src.ml.dataset_preparation import DatasetPreparation as prep
 from src.ml.multi_class_model import MultiClassModel
 from scipy import stats
 from src.utils.file_utils import unpack_features
 from itertools import combinations
-
+from src.ml.binary_model import BinaryModel
+from collections import defaultdict, Counter
+from pathlib import Path
+from src.ml.model_record import ModelRecord
+import sys
+from src.features.fast_extraction import FastExtractionPipeline
 
 class TestPipeline:
-    def __init__(self, verbose=True) -> None:
+    def __init__(self, verbose=True, manager = BinaryModel()) -> None:
         self.collection_times = TIME_INTERVALS
-        self.prep = DatasetPreparation()
-        self.raw_data_directory = RAW_DATA_DIRECTORY
         self.verbose = verbose
-        self.preprocessed_data_dir = PREPROCESSED_DATA_DIRECTORY
+        self.manager = manager
+        self.fast_extractor = self.manager.fast_extractor
+        self.registry = self.manager.registry
+        self.time_datasets = defaultdict(lambda: defaultdict(list))
+        self.data_path = Path(RAW_DATA_DIRECTORY)
 
-    def combine_csvs(self, collection_time):
-        extractor = ExtractionPipeline(collection_time)
-        all_dfs = []
-        for device in os.listdir(self.raw_data_directory):
-            if self.verbose:
-                print(device)
-            for date in os.listdir(f"{self.raw_data_directory}/{device}"):
-                for pcap_file in os.listdir(f"{self.raw_data_directory}/{device}/{date}"):
-                    pcap_df = extractor.extract_features(input_pcap=f"{self.raw_data_directory}/{device}/{date}/{pcap_file}")
-                    if pcap_df.empty:
-                        continue
-                    prepared_df = self.prep.prepare_df(pcap_df, device)
-                    all_dfs.append(prepared_df)
-        return pd.concat(all_dfs, ignore_index=True)
+    def generate_time_datasets(self):
+        import os, psutil
+        proc = psutil.Process(os.getpid())
+        for device_pcap in self.data_path.rglob("*.pcap"):
+            device_name = device_pcap.parent.parent.name
+            print(f"Extracting from {device_pcap}", flush=True)
+            device_df = self.fast_extractor.extract_features(str(device_pcap))
+            print(f"Done extracting {device_pcap}", flush=True)
+            if device_df.empty:
+                continue
+            labeled_df = prep.label_device(device_df, 0)
+            time_arr = self.registry.get_metadata()
+            for time_period in time_arr:
+                for collection_time in self.collection_times:
+                    if time_period <= collection_time:
+                        self.time_datasets[collection_time][device_name].append(str(device_pcap))
+                        print(collection_time, device_name, flush=True)
+                        print(f"Memory: {proc.memory_info().rss / 1024**2:.2f} MB", flush=True)
+
+
+    def train_model(self, device_dataset_map):
+        for device_name in device_dataset_map:
+            true_class = self.manager.prepare_true_class(device_name)
+            true_class_num_sessions = len(device_dataset_map[device_name])
+            records_per_session = max(1, true_class_num_sessions // max(1, len(device_dataset_map) - 1))
+            false_class = self.manager.sample_false_class(device_name, records_per_session)
+            data = true_class + false_class
+            record = ModelRecord(name=device_name, data=data)
+            self.manager.records.append(record)
+        self.manager.train_all()
+        self.manager.save_all()
+        self.manager.records = []
+        self.manager.total_train_acc, self.manager.total_test_acc = 0, 0
 
     def test_intervals(self):
-        cache = {}
-        for collection_time in self.collection_times:
-            if collection_time not in cache:
-                cache[collection_time] = self.combine_csvs(collection_time)
-            input_data = cache[collection_time]
-            manager = MultiClassModel()
-            manager.add_device(input_data)
-            manager.train_all()
-            # manager.save_all()
+        self.generate_time_datasets()
+        for collection_time in self.time_datasets:
+            self.train_model(self.time_datasets[collection_time])
 
     def compare_time_intervals(self, cache: dict, alpha: float = 0.05):
         intervals = sorted(cache.keys())
@@ -89,9 +109,9 @@ class TestPipeline:
         self.compare_time_intervals(cache)
 
 def main():
+    import json
     pipeline = TestPipeline()
-    # pipeline.test_intervals()
-    pipeline.test_windows()
+    pipeline.test_intervals()
 
 if __name__ == "__main__":
     main()
