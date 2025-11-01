@@ -17,6 +17,7 @@ from pathlib import Path
 from src.ml.model_record import ModelRecord
 import sys
 from src.features.fast_extraction import FastExtractionPipeline
+import random
 
 class TestPipeline:
     def __init__(self, verbose=True, manager = BinaryModel()) -> None:
@@ -27,60 +28,113 @@ class TestPipeline:
         self.registry = self.manager.registry
         self.time_datasets = defaultdict(lambda: defaultdict(list))
         self.data_path = Path(RAW_DATA_DIRECTORY)
+        self.base_cache_dir = Path("session_cache/collection_times")
 
     def generate_time_datasets(self):
-        import os, psutil
-        proc = psutil.Process(os.getpid())
         for device_pcap in self.data_path.rglob("*.pcap"):
             device_name = device_pcap.parent.parent.name
-            print(f"Extracting from {device_pcap}", flush=True)
             device_df = self.fast_extractor.extract_features(str(device_pcap))
-            print(f"Done extracting {device_pcap}", flush=True)
             if device_df.empty:
                 continue
-            labeled_df = prep.label_device(device_df, 0)
+            device_df = prep.label_device(device_df, 0)
             time_arr = self.registry.get_metadata()
-            for time_period in time_arr:
+            for i, time_period in enumerate(time_arr):
                 for collection_time in self.collection_times:
                     if time_period <= collection_time:
-                        self.time_datasets[collection_time][device_name].append(str(device_pcap))
-                        print(collection_time, device_name, flush=True)
-                        print(f"Memory: {proc.memory_info().rss / 1024**2:.2f} MB", flush=True)
+                        cache_dir = self.base_cache_dir /str(collection_time) / device_name
+                        cache_dir.mkdir(parents=True, exist_ok=True)
+                        file_path = cache_dir / f"{device_pcap.stem}_{time_period}.parquet"
+                        device_df.iloc[:i].to_parquet(file_path, index=False)
+                        self.time_datasets[collection_time][device_name].append(str(file_path))
 
+    def prepare_true_class(self, device_directory: Path):
+        true_class = []
+        for device_file in device_directory.iterdir():
+            device_df = pd.read_parquet(device_file)
+            true_class.append(prep.label_device(device_df, 1))
+        return true_class
+        
+    def sample_false_class(self, current_device_name, collection_time_directory, sessions_per_class):
+        sampled_dfs = []
+        for device_name in collection_time_directory.iterdir():
+            if device_name == current_device_name:
+                continue
+            device_directory = collection_time_directory / device_name
+            all_files = [f for f in device_directory.iterdir() if f.is_file()]
+            sample_size = min(sessions_per_class, len(all_files))
+            sampled = random.sample(all_files, sample_size)
+            sampled_dfs.extend([pd.read_parquet(file) for file in sampled])
+        return sampled_dfs
 
-    def train_model(self, device_dataset_map):
-        for device_name in device_dataset_map:
-            true_class = self.manager.prepare_true_class(device_name)
-            true_class_num_sessions = len(device_dataset_map[device_name])
-            records_per_session = max(1, true_class_num_sessions // max(1, len(device_dataset_map) - 1))
-            false_class = self.manager.sample_false_class(device_name, records_per_session)
-            data = true_class + false_class
-            record = ModelRecord(name=device_name, data=data)
-            self.manager.records.append(record)
+    def train_model(self):
+        current_dir = self.base_cache_dir
+        for collection_time in self.base_cache_dir.iterdir():
+            current_dir = current_dir / str(collection_time)
+            for device_name in current_dir.iterdir():
+                current_dir = current_dir / device_name
+                true_class = self.prepare_true_class(current_dir)
+                sessions_per_class = max(1, len(true_class) // max(1, len(self.base_cache_dir) - 1))
+                false_class = self.sample_false_class(device_name, collection_time, sessions_per_class)
+                data = true_class + false_class
+                record = ModelRecord(name=device_name, data=data)
+                self.manager.records.append(record)
         self.manager.train_all()
         self.manager.save_all()
         self.manager.records = []
         self.manager.total_train_acc, self.manager.total_test_acc = 0, 0
 
     def test_intervals(self):
-        self.generate_time_datasets()
+        if not self.time_datasets:
+            self.generate_time_datasets()
         for collection_time in self.time_datasets:
             self.train_model(self.time_datasets[collection_time])
 
-    def compare_time_intervals(self, cache: dict, alpha: float = 0.05):
-        intervals = sorted(cache.keys())
+    def compare_time_intervals(self, alpha: float = 0.05):
+        intervals = sorted(self.time_datasets.keys())
         if len(intervals) < 2:
             raise ValueError("Need at least two time intervals to compare.")
-        cols = cache[intervals[0]].columns
-        numeric_cols = [col for col in cols if pd.api.types.is_numeric_dtype(cache[intervals[0]][col])]
+
+        # --- Step 1: Load and combine all files for each interval ---
+        combined = {}
+        for interval in intervals:
+            dfs = []
+            for device, paths in self.time_datasets[interval].items():
+                for path in paths:
+                    path = Path(path)
+                    if not path.exists():
+                        print(f"⚠️  Missing file: {path}")
+                        continue
+                    try:
+                        df = pd.read_csv(path)
+                        dfs.append(df)
+                    except Exception as e:
+                        print(f"⚠️  Error reading {path}: {e}")
+            if dfs:
+                combined[interval] = pd.concat(dfs, ignore_index=True)
+            else:
+                combined[interval] = pd.DataFrame()
+        
+        # --- Step 2: Pick numeric columns ---
+        first_nonempty = next((df for df in combined.values() if not df.empty), None)
+        if first_nonempty is None:
+            raise ValueError("All intervals have empty or missing data.")
+        
+        numeric_cols = [
+            col for col in first_nonempty.columns
+            if pd.api.types.is_numeric_dtype(first_nonempty[col])
+        ]
+
+        # --- Step 3: Pairwise comparisons across intervals ---
         results = []
-        for (t1, df1), (t2, df2) in combinations(cache.items(), 2):
+        for (t1, df1), (t2, df2) in combinations(combined.items(), 2):
+            if df1.empty or df2.empty:
+                continue
             for col in numeric_cols:
                 a = pd.to_numeric(df1[col], errors="coerce").dropna()
                 b = pd.to_numeric(df2[col], errors="coerce").dropna()
                 if len(a) < 2 or len(b) < 2:
                     continue
-                stat, p = stats.ttest_ind(a, b, equal_var=False)
+                stat, p = stats.ttest_ind(a, b, equal_var=False, nan_policy="omit")
                 results.append({
                     "interval_1": t1,
                     "interval_2": t2,
@@ -89,7 +143,13 @@ class TestPipeline:
                     "p_value": p,
                     "significant": p < alpha
                 })
+
+        # --- Step 4: Summarize results ---
         results_df = pd.DataFrame(results)
+        if results_df.empty:
+            print("⚠️  No comparable numeric data found across intervals.")
+            return results_df, pd.DataFrame()
+
         summary = (
             results_df.groupby("column")["significant"]
             .sum()
@@ -97,21 +157,23 @@ class TestPipeline:
             .rename(columns={"significant": "significant_differences"})
             .sort_values("significant_differences", ascending=False)
         )
-        print(f"Compared {len(results_df)} feature pairs across {len(intervals)} intervals.")
+
+        print(f"✅ Compared {len(results_df)} feature pairs across {len(intervals)} intervals.")
         print(f"Top differing features:\n{summary.head(10)}")
+
+        return results_df, summary
+    
+    def test_windows(self):
+        if not self.time_datasets:
+            self.generate_time_datasets()
+        results_df, summary = self.compare_time_intervals()
         return results_df, summary
 
-    def test_windows(self):
-        cache = {}
-        for collection_time in self.collection_times:
-            if collection_time not in cache:
-                cache[collection_time] = self.combine_csvs(collection_time)
-        self.compare_time_intervals(cache)
-
 def main():
-    import json
     pipeline = TestPipeline()
+    pipeline.generate_time_datasets()
     pipeline.test_intervals()
+    # pipeline.test_windows()
 
 if __name__ == "__main__":
     main()
