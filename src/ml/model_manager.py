@@ -95,6 +95,7 @@ class Manager:
                 self.session_counts[device_name] = session_id
             self._save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
+        self.save_session(self.unseen_sessions, "unseen_sessions")
 
     def save_session_counts(self):
         output_directory = self.cache_path / "session_counts.json"
@@ -137,9 +138,8 @@ class Manager:
     def prepare_sessions(self):
         if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
             self.cache_sessions()
-        else:
-            self.map_sessions()
-            self.unseen_sessions = self.load_sessions("unseen_sessions")
+        self.map_sessions()
+        self.unseen_sessions = self.load_sessions("unseen_sessions")
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)

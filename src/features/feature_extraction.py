@@ -199,10 +199,10 @@ class FeatureExtractor:
         return features.to_flat_dict()
 
 class FlowManager:
-    def __init__(self, extractor = FeatureExtractor, registry = SessionRegistry()):
+    def __init__(self, extractor = FeatureExtractor, registry = None):
         self.flows = {}
         self.extractor = extractor
-        self.registry = registry
+        self.registry = registry or SessionRegistry()
 
     def update_flow(self, pkt, ts):
         k = five_tuple(pkt)

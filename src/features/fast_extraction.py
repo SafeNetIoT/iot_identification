@@ -89,6 +89,10 @@ class FastExtractionPipeline:
             try:
                 first_pkt = next(pcap)
                 self.registry.set_first_pkt(first_pkt)
+                first_ts = float(getattr(first_pkt, "time", 0.0))
+                row = manager.update_flow(first_pkt, first_ts)
+                if row:
+                    rows.append(row)
             except StopIteration:
                 return pd.DataFrame()
             
