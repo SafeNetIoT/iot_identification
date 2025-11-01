@@ -8,3 +8,5 @@ joblib
 imblearn
 pytest
 zarr<3
+pyarrow 
+fastparquet
