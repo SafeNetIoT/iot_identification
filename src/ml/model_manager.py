@@ -1,18 +1,14 @@
 import os
 from src.ml.base_model import BaseModel
-from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY, RAW_DATA_DIRECTORY, SESSION_CACHE_PATH, UNSEEN_FRACTION, TIME_INTERVALS
+from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY
 from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
 import joblib
 from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
-import pandas as pd
-import zarr
-from pathlib import Path
-from collections import defaultdict, Counter
+from src.ml.cache import Cache
 import random
-import json
 
 class Manager:
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
@@ -25,121 +21,11 @@ class Manager:
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
         self.fast_extractor = FastExtractionPipeline()
-        self.registry = self.fast_extractor.registry
-        self.registry.set_directory("session_cache")
         self.model_directory = None
-        self.data_path = Path(RAW_DATA_DIRECTORY)
-        self.cache_path = Path(SESSION_CACHE_PATH)
-        self.device_sessions = defaultdict(list)
-        self.unseen_sessions = defaultdict(list)
-        self.unseen_fraction = UNSEEN_FRACTION
-        self.session_counts = Counter()
         random.seed(self.random_state)
-        self.collection_times = TIME_INTERVALS
-        self.prepare_sessions()
-
-    def save_session(self, cache, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
-        for device, sessions in cache.items():
-            group = root.create_group(device)
-            for i, item in enumerate(sessions):
-                if isinstance(item, pd.DataFrame):
-                    group.create_dataset(f"session_{i:05d}", data=item.to_records(index=False))
-                elif isinstance(item, (str, Path)):
-                    group.create_dataset(f"session_{i:05d}", data=str(item))
-                else:
-                    raise TypeError(f"Unsupported item type {type(item)} in cache for {device}")
-
-    def load_sessions(self, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
-        sessions = {}
-        for device in root.group_keys():
-            device_group = root[device]
-            loaded = []
-            for ds in device_group.values():
-                if ds.dtype.names:
-                    loaded.append(pd.DataFrame(ds[:]))
-                else:
-                    val = ds[()]  # scalar read (not slicing)
-                    if isinstance(val, bytes):
-                        val = val.decode()
-                    loaded.append(Path(val))
-            sessions[device] = loaded
-        return sessions
-
-    def cache_sessions(self):
-        for device_dir in self.data_path.iterdir():
-            device_name = str(device_dir.name)
-            print(device_name)
-            time_to_session = defaultdict(list)
-            session_id = 0
-            for device_pcap in device_dir.rglob("*.pcap"):
-                unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
-                if unlabeled_device_df.empty:
-                    continue
-                time_arr = self.registry.get_metadata()
-                if random.random() < self.unseen_fraction:
-                    self.unseen_sessions[device_name].append(device_pcap)
-                    continue
-                labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
-                window_start = 0
-                for i, interval_end in enumerate(time_arr):
-                    for collection_time in self.collection_times:
-                        if interval_end < collection_time:
-                            time_to_session[collection_time].append(
-                                (labeled_df.iloc[window_start:i + 1], session_id)
-                                )
-                            window_start += 1
-                            break
-                session_id += 1
-                self.session_counts[device_name] = session_id
-            self._save_time_to_session(device_name, time_to_session)
-        self.save_session_counts()
-        self.save_session(self.unseen_sessions, "unseen_sessions")
-
-    def save_session_counts(self):
-        output_directory = self.cache_path / "session_counts.json"
-        with open(output_directory, 'w') as file:
-            json.dump(self.session_counts, file, indent=2)
-
-    def load_session_counts(self):
-        output_directory = self.cache_path / "session_counts.json"
-        if len(self.session_counts) != 0:
-            return self.session_counts
-        with open(output_directory, 'r') as file:
-            self.session_counts = json.load(file)
-            
-    def _save_time_to_session(self, device_name, time_to_session):
-        for collection_time in time_to_session:
-            collection_dir = self.cache_path / "collection_times" / str(collection_time)
-            print(collection_dir)
-            collection_dir.mkdir(parents=True, exist_ok=True)
-            for session, session_id in time_to_session[collection_time]:
-                session_file = collection_dir / device_name / f"session_{session_id}.parquet"
-                session_file.parent.mkdir(parents=True, exist_ok=True)
-                session.to_parquet(session_file, index=False)
-
-    def map_sessions(self):
-        self.load_session_counts()
-        self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
-        seen_cache_dir = self.cache_path / "collection_times"
-        for collection_time in seen_cache_dir.iterdir():
-            for device_dir in collection_time.iterdir():
-                device_name = device_dir.name
-                for session_file in device_dir.iterdir():
-                    session = pd.read_parquet(session_file)
-                    session_index = int(session_file.stem.split("_")[1])
-                    placeholder = self.device_sessions[device_name][session_index]
-                    if placeholder is None:
-                        self.device_sessions[device_name][session_index] = session
-                    else:
-                        self.device_sessions[device_name][session_index] = pd.concat([placeholder, session], ignore_index=True)
-
-    def prepare_sessions(self):
-        if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
-            self.cache_sessions()
-        self.map_sessions()
-        self.unseen_sessions = self.load_sessions("unseen_sessions")
+        self.cache = Cache()
+        self.device_sessions, self.unseen_sessions = self.cache.build()
+        
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)

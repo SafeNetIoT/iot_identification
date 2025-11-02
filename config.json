@@ -29,7 +29,7 @@
         "fast_mode":1,
         "sample_fraction":0.1
     },
-    "model_under_test":"models/2025-10-25/binary_model1",
+    "model_under_test":"models/2025-11-02/binary_model",
     "multiclass_model_under_test":"models/2025-10-25/multiclass_model5",
     "desired_accuracy":0.85,
     "mac_address_map_path":"mac_address_map.json"
