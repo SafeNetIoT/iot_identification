@@ -24,10 +24,25 @@ class Manager:
         self.model_directory = None
         random.seed(self.random_state)
         self.cache = Cache()
+        # self.device_sessions, self.unseen_sessions = self.cache.build()
+
+    def set_cache(self, cache = None):
+        if cache is not None:
+            self.cache = cache
         self.device_sessions, self.unseen_sessions = self.cache.build()
-        
+        return self.device_sessions, self.unseen_sessions
+
+    def set_device_sessions(self, sessions_map):
+        self.device_sessions = sessions_map
+        return
+    
+    def reset_training_attributes(self):
+        self.total_train_acc, self.total_test_acc = 0, 0
+        self.records = []
+        return
 
     def train_classifier(self, record, show_curve = False):
+        print(record.data)
         clf = BaseModel(self.architecture, record.data, record.name)
         clf.split()
         clf.scale()
@@ -97,9 +112,11 @@ class Manager:
         if os.path.isfile(self.output_directory):
             raise ValueError("output_directory is a file")
         self.create_model_directory()
+        print(self.model_directory)
         for record in self.records:
             model = record.model
             name = record.name
+            print("name:", name)
             joblib.dump(model, f"{self.model_directory}/{name}.pkl")
             print(f"saved {model} to {self.model_directory}/{name}.pkl")
             train_acc, test_acc = self.save_evaluation(record)

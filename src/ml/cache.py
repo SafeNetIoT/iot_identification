@@ -7,6 +7,7 @@ from collections import defaultdict, Counter
 import json
 from src.features.fast_extraction import FastExtractionPipeline
 from src.ml.dataset_preparation import DatasetPreparation as prep
+from copy import deepcopy
 
 class Cache:
     def __init__(self):
@@ -119,3 +120,37 @@ class Cache:
         self.map_sessions()
         self.unseen_sessions = self.load_sessions("unseen_sessions")
         return self.device_sessions, self.unseen_sessions
+
+class TimeBasedCache(Cache):
+    def __init__(self):
+        super().__init__()
+
+    def map_sessions(self):
+        time_collection_cache = self.cache_path / "collection_times"
+        session_map = defaultdict(lambda: defaultdict(list))
+        session_ptr = defaultdict(dict) # device_name: session_id: index
+        collection_dirs = sorted(time_collection_cache.iterdir(), key=lambda p: int(p.name))
+        for i, collection_time_dir in enumerate(collection_dirs):
+            if i > 0:
+                prev_time = self.collection_times[i - 1]
+                session_map[collection_time_dir] = deepcopy(session_map[prev_time])
+            else:
+                session_map[collection_time_dir] = defaultdict(list)
+            for device_dir in collection_time_dir.iterdir():
+                device_name = device_dir.name
+                for session_file in device_dir.iterdir():
+                    session_id = int(session_file.stem.split("_")[1])
+                    session_df = pd.read_parquet(str(session_file))
+                    if session_id not in session_ptr:
+                        session_ptr[device_name][session_id] = len(session_map[collection_time_dir][device_name])
+                        session_map[collection_time_dir][device_name].append(session_df)
+                    else:
+                        index = session_ptr[device_name][session_id]
+                        placeholder = session_map[collection_time_dir][device_name][index]
+                        session_map[collection_time_dir][device_name][index] = pd.concat([placeholder, session_df], ignore_index=True)
+        return session_map
+
+    def build(self):
+        if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
+            self.cache_sessions()
+        return self.map_sessions()

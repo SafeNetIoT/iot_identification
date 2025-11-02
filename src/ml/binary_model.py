@@ -31,6 +31,7 @@ class BinaryModel(Manager):
 
     def prepare_datasets(self, verbose=False):
         for device_name in self.device_sessions:
+            print(device_name)
             true_class = self.prepare_true_class(device_name)
             true_class_num_sessions = len(self.device_sessions[device_name])
             records_per_session = max(1, true_class_num_sessions // max(1, len(self.device_sessions) - 1))
@@ -40,6 +41,12 @@ class BinaryModel(Manager):
                 print(device_name, f"true class length: {len(true_class)}, false class length: {len(false_class)}")
             record = ModelRecord(name=device_name, data=data)
             self.records.append(record)
+
+    def slow_train(self):
+        self.device_sessions, self.unseen_sessions = self.set_cache()
+        self.prepare_datasets()
+        self.train_all()
+        self.save_all()
 
     def add_device(self, device_name, device_directory, verbose=False):
         device_path = Path(device_directory)
@@ -83,9 +90,7 @@ def main():
     # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
 
     manager = BinaryModel()
-    manager.prepare_datasets()
-    manager.train_all()
-    manager.save_all()
+    manager.slow_train()
 
     # manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
     # manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")

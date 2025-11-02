@@ -2,33 +2,36 @@
 Still WIP
 """
 
-from src.features.feature_extraction import ExtractionPipeline
-import os
-from config import TIME_INTERVALS, RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY
+from config import TIME_INTERVALS
 import pandas as pd
 from src.ml.dataset_preparation import DatasetPreparation as prep
-from src.ml.multi_class_model import MultiClassModel
 from scipy import stats
-from src.utils.file_utils import unpack_features
 from itertools import combinations
-from src.ml.binary_model import BinaryModel
-from collections import defaultdict, Counter
 from pathlib import Path
 from src.ml.model_record import ModelRecord
-import sys
-from src.features.fast_extraction import FastExtractionPipeline
 import random
+from src.ml.cache import TimeBasedCache
+from src.ml.binary_model import BinaryModel
 
 class TestPipeline:
-    def __init__(self, verbose=True, manager = BinaryModel()) -> None:
+    def __init__(self, verbose=True) -> None:
         self.collection_times = TIME_INTERVALS
         self.verbose = verbose
-        self.manager = manager
-        self.fast_extractor = self.manager.fast_extractor
-        self.registry = self.manager.registry
-        self.time_datasets = defaultdict(lambda: defaultdict(list))
-        self.data_path = Path(RAW_DATA_DIRECTORY)
-        self.base_cache_dir = Path("session_cache/collection_times")
+        self.cache = TimeBasedCache()
+        self.time_datasets = self.cache.build()
+        self.manager = BinaryModel()
+
+    def run_intervals(self):
+        for collection_time, dataset in self.time_datasets.items():
+            self.manager.set_device_sessions(dataset)
+            print(dataset)
+            self.manager.prepare_datasets()
+            try:
+                self.manager.train_all()
+                self.manager.save_all()
+            except ValueError:
+                print("not enough data to train all classes")
+            self.manager.reset_training_attributes()
 
     def generate_time_datasets(self):
         for device_pcap in self.data_path.rglob("*.pcap"):
@@ -171,9 +174,16 @@ class TestPipeline:
 
 def main():
     pipeline = TestPipeline()
-    pipeline.generate_time_datasets()
-    pipeline.test_intervals()
+    # pipeline.generate_time_datasets()
+    # pipeline.test_intervals()
     # pipeline.test_windows()
+
+    # for collection_time, dataset_map in pipeline.time_datasets.items():
+    #     print(collection_time)
+    #     for device_name, session_list in dataset_map.items():
+    #         print(device_name, len(session_list))
+    #     print()
+    pipeline.run_intervals()
 
 if __name__ == "__main__":
     main()
