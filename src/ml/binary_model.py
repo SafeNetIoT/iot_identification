@@ -2,8 +2,7 @@ from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
 from pathlib import Path
 import random
-import os 
-import joblib
+from src.utils.exceptions import ModelStateError
 from pandas.errors import EmptyDataError
 
 class BinaryModel(Manager):
@@ -71,12 +70,13 @@ class BinaryModel(Manager):
         self.save_classifier(record)
 
     def predict(self, pcap_file):
+        if not self.model_arr:
+            raise ModelStateError("Model array has not been trained or loaded")
         X = self.fast_extractor.extract_features(pcap_file)
         if X.empty:
             raise EmptyDataError("PCAP file is empty")
-        model_arr = self.load_model()
         result_class, score = None, 0
-        for model in model_arr:
+        for model in self.model_arr:
             predicted_class, confidence = model.predict(X)
             if predicted_class == 0:
                 continue

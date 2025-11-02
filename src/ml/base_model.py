@@ -142,13 +142,13 @@ class BaseModel:
         self.report = classification_report(self.y_test, y_test_pred)
         self.confusion_matrix = confusion_matrix(self.y_test, y_test_pred)
 
-        if verbose:
-            print(f"Train Accuracy: {self.train_acc:.4f}")
-            print(f"Validation/Test Accuracy: {self.test_acc:.4f}")
-            print("\nClassification Report (Test):")
-            print(self.report)
-            print("Confusion Matrix (Test):")
-            print(self.confusion_matrix)
+        # if verbose:
+            # print(f"Train Accuracy: {self.train_acc:.4f}")
+            # print(f"Validation/Test Accuracy: {self.test_acc:.4f}")
+            # print("\nClassification Report (Test):")
+            # print(self.report)
+            # print("Confusion Matrix (Test):")
+            # print(self.confusion_matrix)
 
     def plot_learning_curve(self):
         if self.X is None:

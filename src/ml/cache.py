@@ -131,11 +131,12 @@ class TimeBasedCache(Cache):
         session_ptr = defaultdict(dict) # device_name: session_id: index
         collection_dirs = sorted(time_collection_cache.iterdir(), key=lambda p: int(p.name))
         for i, collection_time_dir in enumerate(collection_dirs):
+            collection_time = int(collection_time_dir.name)
             if i > 0:
                 prev_time = self.collection_times[i - 1]
-                session_map[collection_time_dir] = deepcopy(session_map[prev_time])
+                session_map[collection_time] = deepcopy(session_map[prev_time])
             else:
-                session_map[collection_time_dir] = defaultdict(list)
+                session_map[collection_time] = defaultdict(list)
             for device_dir in collection_time_dir.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
@@ -143,14 +144,16 @@ class TimeBasedCache(Cache):
                     session_df = pd.read_parquet(str(session_file))
                     if session_id not in session_ptr:
                         session_ptr[device_name][session_id] = len(session_map[collection_time_dir][device_name])
-                        session_map[collection_time_dir][device_name].append(session_df)
+                        session_map[collection_time][device_name].append(session_df)
                     else:
                         index = session_ptr[device_name][session_id]
                         placeholder = session_map[collection_time_dir][device_name][index]
-                        session_map[collection_time_dir][device_name][index] = pd.concat([placeholder, session_df], ignore_index=True)
+                        session_map[collection_time][device_name][index] = pd.concat([placeholder, session_df], ignore_index=True)
         return session_map
 
     def build(self):
         if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
             self.cache_sessions()
-        return self.map_sessions()
+        session_map = self.map_sessions()
+        unseen_session = self.load_sessions("unseen_sessions")
+        return session_map, unseen_session

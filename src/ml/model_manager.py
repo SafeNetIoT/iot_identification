@@ -24,6 +24,7 @@ class Manager:
         self.model_directory = None
         random.seed(self.random_state)
         self.cache = Cache()
+        self.model_arr = []
         # self.device_sessions, self.unseen_sessions = self.cache.build()
 
     def set_cache(self, cache = None):
@@ -39,6 +40,7 @@ class Manager:
     def reset_training_attributes(self):
         self.total_train_acc, self.total_test_acc = 0, 0
         self.records = []
+        self.model_arr = []
         return
 
     def train_classifier(self, record, show_curve = False):
@@ -56,6 +58,7 @@ class Manager:
         }
         if show_curve:
             clf.plot_learning_curve()
+        self.model_arr.append(clf)
 
     def train_all(self):
         for record in self.records:
@@ -132,7 +135,7 @@ class Manager:
             raise ValueError("Loading directory has not been specified")
         if not os.path.exists(self.loading_directory):
             raise FileNotFoundError("Model has to be saved before it is loaded")
-        return [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
+        self.model_arr = [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
 
 if __name__ == "__main__":
     manager = Manager()
