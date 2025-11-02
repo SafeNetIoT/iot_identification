@@ -31,7 +31,6 @@ class BinaryModel(Manager):
 
     def prepare_datasets(self, verbose=False):
         for device_name in self.device_sessions:
-            print(device_name)
             true_class = self.prepare_true_class(device_name)
             true_class_num_sessions = len(self.device_sessions[device_name])
             records_per_session = max(1, true_class_num_sessions // max(1, len(self.device_sessions) - 1))

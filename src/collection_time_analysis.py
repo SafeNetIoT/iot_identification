@@ -1,7 +1,3 @@
-"""
-Still WIP
-"""
-
 from config import TIME_INTERVALS
 import pandas as pd
 from src.ml.dataset_preparation import DatasetPreparation as prep
@@ -22,9 +18,8 @@ class TestPipeline:
         self.manager = BinaryModel()
 
     def run_intervals(self):
-        for collection_time, dataset in self.time_datasets.items():
+        for dataset in self.time_datasets.values():
             self.manager.set_device_sessions(dataset)
-            print(dataset)
             self.manager.prepare_datasets()
             try:
                 self.manager.train_all()
@@ -32,65 +27,6 @@ class TestPipeline:
             except ValueError:
                 print("not enough data to train all classes")
             self.manager.reset_training_attributes()
-
-    def generate_time_datasets(self):
-        for device_pcap in self.data_path.rglob("*.pcap"):
-            device_name = device_pcap.parent.parent.name
-            device_df = self.fast_extractor.extract_features(str(device_pcap))
-            if device_df.empty:
-                continue
-            device_df = prep.label_device(device_df, 0)
-            time_arr = self.registry.get_metadata()
-            for i, time_period in enumerate(time_arr):
-                for collection_time in self.collection_times:
-                    if time_period <= collection_time:
-                        cache_dir = self.base_cache_dir /str(collection_time) / device_name
-                        cache_dir.mkdir(parents=True, exist_ok=True)
-                        file_path = cache_dir / f"{device_pcap.stem}_{time_period}.parquet"
-                        device_df.iloc[:i].to_parquet(file_path, index=False)
-                        self.time_datasets[collection_time][device_name].append(str(file_path))
-
-    def prepare_true_class(self, device_directory: Path):
-        true_class = []
-        for device_file in device_directory.iterdir():
-            device_df = pd.read_parquet(device_file)
-            true_class.append(prep.label_device(device_df, 1))
-        return true_class
-        
-    def sample_false_class(self, current_device_name, collection_time_directory, sessions_per_class):
-        sampled_dfs = []
-        for device_name in collection_time_directory.iterdir():
-            if device_name == current_device_name:
-                continue
-            device_directory = collection_time_directory / device_name
-            all_files = [f for f in device_directory.iterdir() if f.is_file()]
-            sample_size = min(sessions_per_class, len(all_files))
-            sampled = random.sample(all_files, sample_size)
-            sampled_dfs.extend([pd.read_parquet(file) for file in sampled])
-        return sampled_dfs
-
-    def train_model(self):
-        current_dir = self.base_cache_dir
-        for collection_time in self.base_cache_dir.iterdir():
-            current_dir = current_dir / str(collection_time)
-            for device_name in current_dir.iterdir():
-                current_dir = current_dir / device_name
-                true_class = self.prepare_true_class(current_dir)
-                sessions_per_class = max(1, len(true_class) // max(1, len(self.base_cache_dir) - 1))
-                false_class = self.sample_false_class(device_name, collection_time, sessions_per_class)
-                data = true_class + false_class
-                record = ModelRecord(name=device_name, data=data)
-                self.manager.records.append(record)
-        self.manager.train_all()
-        self.manager.save_all()
-        self.manager.records = []
-        self.manager.total_train_acc, self.manager.total_test_acc = 0, 0
-
-    def test_intervals(self):
-        if not self.time_datasets:
-            self.generate_time_datasets()
-        for collection_time in self.time_datasets:
-            self.train_model(self.time_datasets[collection_time])
 
     def compare_time_intervals(self, alpha: float = 0.05):
         intervals = sorted(self.time_datasets.keys())
@@ -174,15 +110,6 @@ class TestPipeline:
 
 def main():
     pipeline = TestPipeline()
-    # pipeline.generate_time_datasets()
-    # pipeline.test_intervals()
-    # pipeline.test_windows()
-
-    # for collection_time, dataset_map in pipeline.time_datasets.items():
-    #     print(collection_time)
-    #     for device_name, session_list in dataset_map.items():
-    #         print(device_name, len(session_list))
-    #     print()
     pipeline.run_intervals()
 
 if __name__ == "__main__":

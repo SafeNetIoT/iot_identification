@@ -42,7 +42,6 @@ class Manager:
         return
 
     def train_classifier(self, record, show_curve = False):
-        print(record.data)
         clf = BaseModel(self.architecture, record.data, record.name)
         clf.split()
         clf.scale()
@@ -112,11 +111,9 @@ class Manager:
         if os.path.isfile(self.output_directory):
             raise ValueError("output_directory is a file")
         self.create_model_directory()
-        print(self.model_directory)
         for record in self.records:
             model = record.model
             name = record.name
-            print("name:", name)
             joblib.dump(model, f"{self.model_directory}/{name}.pkl")
             print(f"saved {model} to {self.model_directory}/{name}.pkl")
             train_acc, test_acc = self.save_evaluation(record)
