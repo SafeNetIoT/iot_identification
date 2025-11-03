@@ -143,7 +143,7 @@ class TimeBasedCache(Cache):
                     session_id = int(session_file.stem.split("_")[1])
                     session_df = pd.read_parquet(str(session_file))
                     if session_id not in session_ptr:
-                        session_ptr[device_name][session_id] = len(session_map[collection_time_dir][device_name])
+                        session_ptr[device_name][session_id] = len(session_map[collection_time][device_name])
                         session_map[collection_time][device_name].append(session_df)
                     else:
                         index = session_ptr[device_name][session_id]
