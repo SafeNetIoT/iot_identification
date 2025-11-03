@@ -5,6 +5,7 @@ from typing import Optional
 from config import RANDOM_STATE, DESIRED_ACCURACY, TEST_FRACTION, MAC_ADDRESS_MAP_PATH
 from pandas.errors import EmptyDataError
 import json
+from src.utils.evaluation import evaluate_on_fixed_unseen
 
 
 def list_device_dirs(raw_dir: str) -> list[str]:
@@ -51,26 +52,8 @@ def count_input_conversations(pcap_path: str) -> int:
     return len(pd.read_csv(csv_path))
 
 def _run_unseen_evaluation(model, predict_func):
-    random.seed(RANDOM_STATE)
-    correct, total = 0, 0
-    for device_name, pcap_list in model.unseen_sessions.items():
-        if not pcap_list:
-            continue
-        print(f"Evaluating {device_name}: {len(pcap_list)} pcaps")
-        n_samples = max(1, int(len(pcap_list) * TEST_FRACTION))
-        sampled_pcaps = random.sample(pcap_list, n_samples)
-        for pcap_path in sampled_pcaps:
-            try:
-                prediction = predict_func(str(pcap_path))
-                print("device name:", device_name)
-                print("prediction:", prediction)
-            except EmptyDataError:
-                continue
-            if prediction == device_name:
-                correct += 1
-            total += 1
-    acc = correct / total if total > 0 else 0
-    print("Accuracy:", acc)
+    unseen_data = model.unseen_sessions
+    acc = evaluate_on_fixed_unseen(unseen_dataset=unseen_data, predict_func=predict_func)
     assert acc >= DESIRED_ACCURACY, "Accuracy lower than desired"
 
 def get_mac_address_map():
