@@ -136,7 +136,7 @@ class Manager:
         if not os.path.exists(self.loading_directory):
             raise FileNotFoundError("Model has to be saved before it is loaded")
         self.model_arr = [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
-
+    
 if __name__ == "__main__":
     manager = Manager()
         

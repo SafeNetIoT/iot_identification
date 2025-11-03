@@ -70,6 +70,8 @@ class BinaryModel(Manager):
         self.save_classifier(record)
 
     def predict(self, pcap_file):
+        if self.loading_directory is not None:
+            self.load_model()
         if not self.model_arr:
             raise ModelStateError("Model array has not been trained or loaded")
         X = self.fast_extractor.extract_features(pcap_file)
