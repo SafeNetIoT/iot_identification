@@ -1,17 +1,13 @@
 import os
-from pandas.errors import EmptyDataError
 from src.ml.base_model import BaseModel
-from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY, RAW_DATA_DIRECTORY, SESSION_CACHE_PATH, UNSEEN_FRACTION
+from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY
 from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
 import joblib
 from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
-import pandas as pd
-import zarr
-from pathlib import Path
-from collections import defaultdict
+from src.ml.cache import Cache
 import random
 
 class Manager:
@@ -26,64 +22,26 @@ class Manager:
         self.manager_name = manager_name
         self.fast_extractor = FastExtractionPipeline()
         self.model_directory = None
-        self.data_path = Path(RAW_DATA_DIRECTORY)
-        self.cache_path = Path(SESSION_CACHE_PATH)
-        self.device_sessions = defaultdict(list)
-        self.unseen_sessions = defaultdict(list)
-        self.unseen_fraction = UNSEEN_FRACTION
         random.seed(self.random_state)
-        self.prepare_sessions()
+        self.cache = Cache()
+        self.model_arr = []
+        # self.device_sessions, self.unseen_sessions = self.cache.build()
 
-    def save_session(self, cache, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
-        for device, sessions in cache.items():
-            group = root.create_group(device)
-            for i, item in enumerate(sessions):
-                if isinstance(item, pd.DataFrame):
-                    group.create_dataset(f"session_{i:05d}", data=item.to_records(index=False))
-                elif isinstance(item, (str, Path)):
-                    group.create_dataset(f"session_{i:05d}", data=str(item))
-                else:
-                    raise TypeError(f"Unsupported item type {type(item)} in cache for {device}")
+    def set_cache(self, cache = None):
+        if cache is not None:
+            self.cache = cache
+        self.device_sessions, self.unseen_sessions = self.cache.build()
+        return self.device_sessions, self.unseen_sessions
 
-    def load_sessions(self, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
-        sessions = {}
-        for device in root.group_keys():
-            device_group = root[device]
-            loaded = []
-            for ds in device_group.values():
-                if ds.dtype.names:
-                    loaded.append(pd.DataFrame(ds[:]))
-                else:
-                    val = ds[()]  # scalar read (not slicing)
-                    if isinstance(val, bytes):
-                        val = val.decode()
-                    loaded.append(Path(val))
-            sessions[device] = loaded
-        return sessions
-
-    def map_sessions(self):
-        for device_pcap in self.data_path.rglob("*.pcap"):
-            device_name = device_pcap.parent.parent.name
-            unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
-            if unlabeled_device_df.empty:
-                continue
-            if random.random() < self.unseen_fraction:
-                self.unseen_sessions[device_name].append(device_pcap)
-                continue
-            labeled_df = self.data_prep.label_device(unlabeled_device_df, 0)
-            labeled_df.attrs['pcap_path'] = str(device_pcap)
-            self.device_sessions[device_name].append(labeled_df)
-
-    def prepare_sessions(self):
-        if self.cache_path.exists() and any(self.cache_path.iterdir()):
-            self.device_sessions = self.load_sessions("seen_sessions")
-            self.unseen_sessions = self.load_sessions("unseen_sessions")
-        else:
-            self.map_sessions()
-            self.save_session(self.device_sessions, "seen_sessions")
-            self.save_session(self.unseen_sessions, "unseen_sessions")
+    def set_device_sessions(self, sessions_map):
+        self.device_sessions = sessions_map
+        return
+    
+    def reset_training_attributes(self):
+        self.total_train_acc, self.total_test_acc = 0, 0
+        self.records = []
+        self.model_arr = []
+        return
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
@@ -100,6 +58,7 @@ class Manager:
         }
         if show_curve:
             clf.plot_learning_curve()
+        self.model_arr.append(clf)
 
     def train_all(self):
         for record in self.records:
@@ -171,6 +130,15 @@ class Manager:
         if len(self.records) > 1:
             self.save_average_accuracies()
 
+    def load_model(self):
+        if self.loading_directory is None: 
+            raise ValueError("Loading directory has not been specified")
+        if not os.path.exists(self.loading_directory):
+            raise FileNotFoundError("Model has to be saved before it is loaded")
+        self.model_arr = [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
+    
+if __name__ == "__main__":
+    manager = Manager()
         
 
 

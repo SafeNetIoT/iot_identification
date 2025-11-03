@@ -11,6 +11,7 @@ class MultiClassModel(Manager):
         super().__init__(architecture_name=architecture_name, manager_name=manager_name, output_directory=output_dir, loading_directory=loading_dir)
 
     def run(self):
+        self.device_sessions, self.unseen_sessions = self.set_cache()
         data = []
         for device_name, sessions in self.device_sessions.items():
             sessions = [self.data_prep.label_device(session, device_name) for session in sessions]
@@ -31,7 +32,7 @@ class MultiClassModel(Manager):
         mean_proba = probas.mean(axis=0)
         best_idx = mean_proba.argmax()
         predicted_class = model.model.classes_[best_idx]
-        confidence = mean_proba[best_idx]
+        # confidence = mean_proba[best_idx]
         return predicted_class
 
 

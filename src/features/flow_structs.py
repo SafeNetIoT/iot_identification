@@ -1,7 +1,6 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, is_dataclass, fields
 from src.features.stats import OnlineStats, EntropyCounter
 from config import K_PAYLOAD_BYTES
-from src.utils import flatten
 
 @dataclass
 class DirectionStats:
@@ -13,7 +12,6 @@ class DirectionStats:
     small_pkts: int = 0
     entropy: EntropyCounter = field(default_factory=lambda: EntropyCounter(K_PAYLOAD_BYTES))
     has_data: bool = 0
-
 
 @dataclass
 class TcpFlags:
@@ -154,3 +152,21 @@ class Features:
     def to_flat_dict(self) -> dict:
         return flatten(self)
             
+def flatten(obj, parent_key="", sep="_"):
+    """
+    Flattens nested dataclasses and dicts into a single flat dict.
+    Drops all parent prefixes (so columns are flat like start_ts, src_ip, etc.).
+    """
+    items = {}
+
+    if is_dataclass(obj):
+        # Iterate directly over dataclass fields (do NOT use asdict)
+        obj = {f.name: getattr(obj, f.name) for f in fields(obj)}
+
+    for k, v in obj.items():
+        # no prefix at all — always flatten into top level
+        if is_dataclass(v) or isinstance(v, dict):
+            items.update(flatten(v, sep=sep))
+        else:
+            items[k] = v
+    return items

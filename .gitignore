@@ -6,4 +6,4 @@ data/
 models/
 **/*cache
 /extracted_features
-/session_cache
+/session_cache*

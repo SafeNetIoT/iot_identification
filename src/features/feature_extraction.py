@@ -6,12 +6,13 @@ from config import RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY, MAX_AGE_S, S
 
 from src.features.flow_state import FlowState, FlowStateFactory
 from scapy.all import PcapReader
-from src.utils import is_internal, port_bucket, iot_service_id, discovery_proto_id, five_tuple, canonize
+from src.utils.network_utils import is_internal, port_bucket, iot_service_id, discovery_proto_id, five_tuple, canonize
 from src.features.flow_structs import (
     DirectionStats, TcpFlags, TlsInfo, Identifiers, PacketsStats, BytesStats, PacketLengthStats,
     IATStats, Ratios, PayloadStats, PresenceFlags, PortBuckets, IoTAdditions, TLSHints,
     IoTPortVocab, Features
     )
+from src.features.session_registry import SessionRegistry
 
 class FeatureExtractor:
     def __init__(self, state: FlowState) -> None:
@@ -198,9 +199,10 @@ class FeatureExtractor:
         return features.to_flat_dict()
 
 class FlowManager:
-    def __init__(self, extractor = FeatureExtractor):
+    def __init__(self, extractor = FeatureExtractor, registry = None):
         self.flows = {}
         self.extractor = extractor
+        self.registry = registry or SessionRegistry()
 
     def update_flow(self, pkt, ts):
         k = five_tuple(pkt)
@@ -212,6 +214,7 @@ class FlowManager:
 
         if st is None:
             st = FlowStateFactory.create(ck, ts, first_src_ip=k[0])
+            self.registry.add_collection_time(st.last)
             self.flows[ck] = st
 
         st.update(pkt)

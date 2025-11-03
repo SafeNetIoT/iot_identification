@@ -9,3 +9,6 @@ class DataLeakageError(Exception):
 class PipelineStateError(Exception):
     """Raised when the pipeline is a state which has not initialized the attributes necessary for running a specific method"""
     pass
+
+class ModelStateError(Exception):
+    pass

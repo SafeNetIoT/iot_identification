@@ -7,6 +7,7 @@ from config import SWEEP_EVERY_PKTS, FAST_EXTRACTION_DIRECTORY, RAW_DATA_DIRECTO
 import os
 from pathlib import Path
 from src.ml.dataset_preparation import DatasetPreparation as Prep
+from src.features.session_registry import SessionRegistry
 
 @dataclass
 class ValidFeatures:
@@ -78,25 +79,25 @@ class FastFeatureExtractor:
 class FastExtractionPipeline:
     def __init__(self, time_interval: Optional[float] = None) -> None:
         self.time_interval = time_interval
+        self.registry = SessionRegistry()
 
     def extract_features(self, input_pcap):
-        manager = FlowManager(extractor = FastFeatureExtractor)
+        manager = FlowManager(extractor = FastFeatureExtractor, registry=self.registry)
         rows = []
-        start_time = None
-        cutoff = None
 
         with PcapReader(input_pcap) as pcap:
+            try:
+                first_pkt = next(pcap)
+                self.registry.set_first_pkt(first_pkt)
+                first_ts = float(getattr(first_pkt, "time", 0.0))
+                row = manager.update_flow(first_pkt, first_ts)
+                if row:
+                    rows.append(row)
+            except StopIteration:
+                return pd.DataFrame()
+            
             for pkt_count, pkt in enumerate(pcap, 1):
                 ts = float(getattr(pkt, "time", 0.0))
-
-                if start_time is None:
-                    start_time = ts
-                    if self.time_interval is not None:
-                        cutoff = start_time + self.time_interval
-
-                if cutoff is not None and ts > cutoff:
-                    break
-
                 row = manager.update_flow(pkt, ts)
                 if row:
                     rows.append(row)

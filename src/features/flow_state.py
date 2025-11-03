@@ -1,4 +1,4 @@
-from src.utils import is_internal, is_multicast_ip
+from src.utils.network_utils import is_internal, is_multicast_ip
 from src.features.stats import OnlineStats, EntropyCounter
 from config import K_PAYLOAD_BYTES, MAX_AGE_S, TCP_IDLE_S, UDP_IDLE_S
 from scapy.layers.inet import IP, TCP

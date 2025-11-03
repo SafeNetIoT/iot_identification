@@ -2,8 +2,7 @@ from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
 from pathlib import Path
 import random
-import os 
-import joblib
+from src.utils.exceptions import ModelStateError
 from pandas.errors import EmptyDataError
 
 class BinaryModel(Manager):
@@ -41,6 +40,12 @@ class BinaryModel(Manager):
             record = ModelRecord(name=device_name, data=data)
             self.records.append(record)
 
+    def slow_train(self):
+        self.device_sessions, self.unseen_sessions = self.set_cache()
+        self.prepare_datasets()
+        self.train_all()
+        self.save_all()
+
     def add_device(self, device_name, device_directory, verbose=False):
         device_path = Path(device_directory)
         if not device_path.exists():
@@ -64,20 +69,16 @@ class BinaryModel(Manager):
         self.train_classifier(record, show_curve=True)
         self.save_classifier(record)
 
-    def load_model(self):
-        if self.loading_directory is None: 
-            raise ValueError("Loading directory has not been specified")
-        if not os.path.exists(self.loading_directory):
-            raise FileNotFoundError("Model has to be saved before it is loaded")
-        return [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
-
     def predict(self, pcap_file):
+        if self.loading_directory is not None:
+            self.load_model()
+        if not self.model_arr:
+            raise ModelStateError("Model array has not been trained or loaded")
         X = self.fast_extractor.extract_features(pcap_file)
         if X.empty:
             raise EmptyDataError("PCAP file is empty")
-        model_arr = self.load_model()
         result_class, score = None, 0
-        for model in model_arr:
+        for model in self.model_arr:
             predicted_class, confidence = model.predict(X)
             if predicted_class == 0:
                 continue
@@ -90,9 +91,7 @@ def main():
     # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
 
     manager = BinaryModel()
-    manager.prepare_datasets()
-    manager.train_all()
-    manager.save_all()
+    manager.slow_train()
 
     # manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
     # manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")

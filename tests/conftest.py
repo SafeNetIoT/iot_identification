@@ -36,11 +36,13 @@ def binary_model():
 def binary_model_under_test():
     """Creates a binary model instance with a loaded model specified in config"""
     model = BinaryModel(loading_dir=MODEL_UNDER_TEST)
+    model.set_cache()
     return model
 
 @pytest.fixture
 def multiclass_model_under_test():
     model = MultiClassModel(loading_dir=MULTICLASS_MODEL_UNDER_TEST)
+    model.set_cache()
     return model
 
 @pytest.fixture
