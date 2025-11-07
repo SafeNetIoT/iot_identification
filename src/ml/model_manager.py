@@ -1,6 +1,6 @@
 import os
 from src.ml.base_model import BaseModel
-from config import MODEL_ARCHITECTURES, RANDOM_STATE, MODELS_DIRECTORY
+from config import settings
 from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
@@ -12,11 +12,11 @@ import random
 
 class Manager:
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
-        self.architecture = MODEL_ARCHITECTURES[architecture_name]
+        self.architecture = settings.model_architectures[architecture_name]
         self.data_prep = DatasetPreparation()
         self.records: List[ModelRecord] = []
-        self.random_state = RANDOM_STATE            
-        self.output_directory = output_directory if output_directory is not None else MODELS_DIRECTORY
+        self.random_state = settings.random_state          
+        self.output_directory = output_directory if output_directory is not None else settings.models_directory
         self.loading_directory = loading_directory
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
@@ -25,7 +25,6 @@ class Manager:
         random.seed(self.random_state)
         self.cache = Cache()
         self.model_arr = []
-        # self.device_sessions, self.unseen_sessions = self.cache.build()
 
     def set_cache(self, cache = None):
         if cache is not None:

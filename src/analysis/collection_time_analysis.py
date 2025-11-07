@@ -1,18 +1,12 @@
-from config import TIME_INTERVALS
+from config import settings
 import pandas as pd
-from src.ml.dataset_preparation import DatasetPreparation as prep
-from scipy import stats
-from itertools import combinations
-from pathlib import Path
-from src.ml.model_record import ModelRecord
-import random
 from src.ml.cache import TimeBasedCache
 from src.ml.binary_model import BinaryModel
 from src.utils.evaluation import evaluate_on_fixed_unseen
 
 class TestPipeline:
     def __init__(self, verbose=True) -> None:
-        self.collection_times = TIME_INTERVALS
+        self.collection_times = settings.time_intervals
         self.verbose = verbose
         self.cache = TimeBasedCache()
         self.time_datasets, self.unseen_sessions = self.cache.build()

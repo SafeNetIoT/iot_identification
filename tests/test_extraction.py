@@ -1,6 +1,5 @@
 import pytest
-import os
-from config import RAW_DATA_DIRECTORY, TEST_FRACTION
+from config import settings
 from tests.helpers import list_device_dirs, sample_devices, validate_columns_consistent,validate_row_count, unpack_device
 from src.features.feature_extraction import ExtractionPipeline
 from src.features.fast_extraction import FastExtractionPipeline
@@ -9,10 +8,10 @@ import pandas as pd
 @pytest.mark.parametrize("extractor_class", [ExtractionPipeline, FastExtractionPipeline])
 def test_extraction(extractor_class):
     """Integration test for feature extraction across a subset of devices."""
-    device_files = list_device_dirs(RAW_DATA_DIRECTORY)
+    device_files = list_device_dirs(settings.raw_data_directory)
     assert device_files, "No device files found in raw data directory."
 
-    sampled_devices = sample_devices(device_files, frac=TEST_FRACTION)
+    sampled_devices = sample_devices(device_files, frac=settings.testing.sample_fraction)
     print(f"Testing {len(sampled_devices)} of {len(device_files)} devices.")
 
     reference_cols = None

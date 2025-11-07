@@ -1,8 +1,8 @@
 import yaml
-from config import VALID_FEATURES_DIRECTORY, FEATURE_MENU_PATH
+from config import settings
 
 def unpack_feature_groups():
-    with open(FEATURE_MENU_PATH, "r") as f:
+    with open(settings.feature_menu_path, "r") as f:
         data = yaml.safe_load(f)
 
     feature_groups = []
@@ -12,6 +12,6 @@ def unpack_feature_groups():
     return feature_groups
 
 def unpack_features():
-    with open(VALID_FEATURES_DIRECTORY, 'r') as file:
+    with open(settings.valid_features_directory, 'r') as file:
         features = [line.strip() for line in file]
     return features

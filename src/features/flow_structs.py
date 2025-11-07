@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, asdict, is_dataclass, fields
 from src.features.stats import OnlineStats, EntropyCounter
-from config import K_PAYLOAD_BYTES
+from config import settings
 
 @dataclass
 class DirectionStats:
@@ -10,7 +10,7 @@ class DirectionStats:
     iat: OnlineStats = field(default_factory=OnlineStats)
     last_ts: float = None
     small_pkts: int = 0
-    entropy: EntropyCounter = field(default_factory=lambda: EntropyCounter(K_PAYLOAD_BYTES))
+    entropy: EntropyCounter = field(default_factory=lambda: EntropyCounter(settings.k_payload_bytes))
     has_data: bool = 0
 
 @dataclass

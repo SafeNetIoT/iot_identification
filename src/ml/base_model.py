@@ -1,4 +1,4 @@
-from config import MODELS_DIRECTORY, RANDOM_STATE
+from config import settings
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from src.utils.file_utils import unpack_features
@@ -17,7 +17,7 @@ from src.ml.tune_config import TuneConfig
 class BaseModel:
     def __init__(self, architecture: Dict, input_data: List[pd.DataFrame], name: str, test_size: float = 0.2) -> None:
         self.name = name
-        self.output_directory = MODELS_DIRECTORY
+        self.output_directory = settings.models_directory
         self.model = RandomForestClassifier(**architecture)
         self.data = input_data
         self.train_acc, self.test_acc, self.report, self.confusion_matrix = None, None, None, None
@@ -25,7 +25,7 @@ class BaseModel:
         self.X_train, self.y_train, self.X_test, self.y_test = None, None, None, None
         self.cv_results = None
         self.test_size = test_size
-        self.random_state = RANDOM_STATE
+        self.random_state = settings.random_state
         self._verify_schema()
 
     def _verify_schema(self):

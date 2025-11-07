@@ -1,11 +1,11 @@
-from config import INTERNAL_NETS
+from config import settings
 from scapy.layers.inet import IP, TCP, UDP
 import ipaddress
 from scapy.layers.inet6 import IPv6
 
 def is_internal(ip: str) -> bool:
     ip_obj = ipaddress.ip_address(ip) if not isinstance(ip, (ipaddress.IPv4Address, ipaddress.IPv6Address)) else ip
-    return any(ip_obj in net for net in INTERNAL_NETS)
+    return any(ip_obj in net for net in settings.internal_nets)
 
 def is_multicast_ip(ip_str: str) -> bool:
     try:

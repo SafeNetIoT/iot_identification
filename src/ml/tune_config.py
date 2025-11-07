@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from scipy.stats import randint
-from config import RANDOM_STATE
+from config import settings
 
 @dataclass
 class TuneConfig:
@@ -15,7 +15,7 @@ class TuneConfig:
     scoring: str = "accuracy"
     n_jobs: int = -1
     verbose: int = 2
-    random_state: int = RANDOM_STATE
+    random_state: int = settings.random_state
 
     def param_distributions(self) -> dict:
         """Return the parameter distributions for RandomizedSearchCV."""

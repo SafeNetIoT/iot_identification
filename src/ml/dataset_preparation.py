@@ -1,11 +1,11 @@
 import pandas as pd
-from config import PREPROCESSED_DATA_DIRECTORY, VALID_FEATURES_DIRECTORY
+from config import settings
 
 
 class DatasetPreparation:
     def __init__(self) -> None:
-        self.preprocessed_data_directory = PREPROCESSED_DATA_DIRECTORY
-        feature_dir = VALID_FEATURES_DIRECTORY
+        self.preprocessed_data_directory = settings.preprocessed_data_directory
+        feature_dir = settings.valid_features_directory
         with open(feature_dir, 'r') as file:
             self.features = [line.strip() for line in file]
         self.feature_set = set(self.features)

@@ -1,23 +1,32 @@
 import zarr
 import pandas as pd
 from pathlib import Path
-from config import SESSION_CACHE_PATH, RAW_DATA_DIRECTORY, UNSEEN_FRACTION, TIME_INTERVALS
+from config import settings
 import random
 from collections import defaultdict, Counter
 import json
 from src.features.fast_extraction import FastExtractionPipeline
 from src.ml.dataset_preparation import DatasetPreparation as prep
 from copy import deepcopy
+from src.services.data_store import DataStoreFactory
+from src.services.redis_cache import RedisCache
 
 class Cache:
     def __init__(self):
-        self.cache_path = Path(SESSION_CACHE_PATH)
-        self.data_path = Path(RAW_DATA_DIRECTORY)
+        self.cache_path = Path(settings.session_cache_path)
+        self.data_store = DataStoreFactory.create(settings.raw_data_directory)
         self.fast_extractor = FastExtractionPipeline()
         self.registry = self.fast_extractor.registry # maybe a method
         self.session_counts = Counter()
-        self.unseen_fraction = UNSEEN_FRACTION
-        self.collection_times = TIME_INTERVALS
+        self.unseen_fraction = settings.unseen_fraction
+        self.collection_times = settings.time_intervals
+        self.redis = RedisCache()
+
+    def save_unseen(self):
+        self.redis.set("unseen_sessions", self.unseen_sessions)
+
+    def load_unseen(self):
+        return self.redis.get("unseen_sessions")
 
     def save_session(self, cache, cache_name):
         root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
@@ -49,11 +58,11 @@ class Cache:
         return sessions
 
     def cache_sessions(self):
-        for device_dir in self.data_path.iterdir():
+        for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
             time_to_session = defaultdict(list)
             session_id = 0
-            for device_pcap in device_dir.rglob("*.pcap"):
+            for device_pcap in self.data_store.list_pcap_files(device_pcap):
                 unlabeled_device_df = self.fast_extractor.extract_features(str(device_pcap))
                 if unlabeled_device_df.empty:
                     continue
@@ -75,12 +84,14 @@ class Cache:
                 self.session_counts[device_name] = session_id
             self._save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
-        self.save_session(self.unseen_sessions, "unseen_sessions")
+        # self.save_session(self.unseen_sessions, "unseen_sessions")
+        self.save_unseen()
 
     def save_session_counts(self):
-        output_directory = self.cache_path / "session_counts.json"
-        with open(output_directory, 'w') as file:
-            json.dump(self.session_counts, file, indent=2)
+        self.redis.set("session_counts", self.session_counts)
+        # output_directory = self.cache_path / "session_counts.json"
+        # with open(output_directory, 'w') as file:
+        #     json.dump(self.session_counts, file, indent=2)
 
     def load_session_counts(self):
         output_directory = self.cache_path / "session_counts.json"
@@ -118,7 +129,8 @@ class Cache:
         if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
             self.cache_sessions()
         self.map_sessions()
-        self.unseen_sessions = self.load_sessions("unseen_sessions")
+        # self.unseen_sessions = self.load_sessions("unseen_sessions")
+        self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
 
 class TimeBasedCache(Cache):
@@ -155,5 +167,6 @@ class TimeBasedCache(Cache):
         if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
             self.cache_sessions()
         session_map = self.map_sessions()
-        unseen_session = self.load_sessions("unseen_sessions")
-        return session_map, unseen_session
+        # unseen_session = self.load_sessions("unseen_sessions")
+        unseen_sessions = self.load_unseen()
+        return session_map, unseen_sessions

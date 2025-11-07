@@ -1,6 +1,6 @@
 from src.utils.network_utils import is_internal, is_multicast_ip
 from src.features.stats import OnlineStats, EntropyCounter
-from config import K_PAYLOAD_BYTES, MAX_AGE_S, TCP_IDLE_S, UDP_IDLE_S
+from config import settings
 from scapy.layers.inet import IP, TCP
 from scapy.layers.inet6 import IPv6
 from scapy.layers.l2 import Ether
@@ -51,8 +51,8 @@ class FlowStateFactory:
     @staticmethod
     def _init_entropy(fs):
         fs.ent_fwd, fs.ent_bwd = (
-            EntropyCounter(K_PAYLOAD_BYTES),
-            EntropyCounter(K_PAYLOAD_BYTES),
+            EntropyCounter(settings.k_payload_bytes),
+            EntropyCounter(settings.k_payload_bytes),
         )
 
     @staticmethod
@@ -193,13 +193,13 @@ class FlowState:
         self._update_multicast_broadcast(dst_ip, pkt)
 
     def idle_timeout(self):
-        return TCP_IDLE_S if self.proto == 6 else UDP_IDLE_S
+        return settings.tcp_idle_s if self.proto == 6 else settings.udp_idle_s
 
     def should_evict(self, now_ts):
         if self.proto == 6 and self.seen_fin_rst:
             return True
         if (now_ts - self.last) >= self.idle_timeout():
             return True
-        if (self.last - self.first) >= MAX_AGE_S:
+        if (self.last - self.first) >= settings.max_age_s:
             return True
         return False
