@@ -138,6 +138,8 @@ class Manager:
     
 if __name__ == "__main__":
     manager = Manager()
+    # manager.set_cache()
+    print(manager.architecture)
         
 
 

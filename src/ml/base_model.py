@@ -18,7 +18,7 @@ class BaseModel:
     def __init__(self, architecture: Dict, input_data: List[pd.DataFrame], name: str, test_size: float = 0.2) -> None:
         self.name = name
         self.output_directory = settings.models_directory
-        self.model = RandomForestClassifier(**architecture)
+        self.model = RandomForestClassifier(**architecture.dict())
         self.data = input_data
         self.train_acc, self.test_acc, self.report, self.confusion_matrix = None, None, None, None
         self.X, self.y = None, None

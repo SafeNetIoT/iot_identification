@@ -1,5 +1,5 @@
 from redis import Redis
-from config import redis_settings
+from config import RedisSettings
 import json
 import pickle
 
@@ -8,9 +8,9 @@ class RedisCache:
 
     def __init__(self):
         self.redis = Redis(
-            host=redis_settings.host,
-            port=redis_settings.port,
-            db=redis_settings.db,
+            host=RedisSettings().host,
+            port=RedisSettings().port,
+            db=RedisSettings().db,
             decode_responses=False,  # store bytes for pickled data
         )
 

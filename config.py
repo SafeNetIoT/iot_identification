@@ -13,18 +13,18 @@ class TestingConfig(BaseModel):
     fast_mode: int
     sample_fraction: float
 
-class FTPSettings(BaseSettings):
-    FTP_HOST: str
-    FTP_USER: str
-    FTP_PASS: str
-    FTP_BASE_DIR: str
+# class FTPSettings(BaseSettings):
+#     FTP_HOST: str
+#     FTP_USER: str
+#     FTP_PASS: str
+#     FTP_BASE_DIR: str
 
-    class Config:
-        env_file = ".env"
+#     class Config:
+#         env_file = ".env"
 
 class RedisSettings(BaseSettings):
     host:str = "localhost"
-    port:int = 80
+    port:int = 6379
     db: int = 0
 
 class Settings(BaseSettings):
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     session_cache_path: str = "session_cache"
     unsw_dataset_path: str = "data/unsw_unzipped"
     time_intervals: List[int] = [10, 20, 30, 45, 60, 75, 90, 105]
-    internal_nets: List[ipaddress.ip_network] = [ipaddress.ip_network("10.0.0.0/8"), ipaddress.ip_network("172.16.0.0/12"), ipaddress.ip_network("192.168.0.0/16")]
+    internal_nets: List[ipaddress.IPv4Network] = [ipaddress.ip_network("10.0.0.0/8"), ipaddress.ip_network("172.16.0.0/12"), ipaddress.ip_network("192.168.0.0/16")]
     tcp_idle_s: int = 300
     udp_idle_s: int = 60
     max_age_s: int = 3600
@@ -59,8 +59,8 @@ class Settings(BaseSettings):
     multiclass_model_under_test: str = "models/2025-10-25/multiclass_model5"
     desired_accuracy: float = 0.85
     mac_address_map_path: str = "mac_address_map.json"
-    redis_settings = RedisSettings
-    ftp_settings = FTPSettings
+    redis_settings:RedisSettings = RedisSettings()
+    # ftp_settings:FTPSettings = FTPSettings()
     default_store: str = "local"
 
 settings = Settings()

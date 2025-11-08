@@ -16,6 +16,18 @@ class DataStore(ABC):
     def list_pcap_files(self, directory_name):
         pass
 
+    @abstractmethod
+    def save_time_to_session(self, device_name, time_to_session):
+        pass
+
+    @abstractmethod
+    def list_collection_times(self):
+        pass
+
+    @abstractmethod
+    def cache_exists(self):
+        pass
+
     # @abstractmethod
     # def save_dataframe(self, df, path):
     #     pass
@@ -27,13 +39,29 @@ class DataStore(ABC):
 class LocalStore(DataStore):
     def __init__(self, data_path):
         self.base_path = Path(data_path)
+        self.cache_path = Path(settings.session_cache_path)
 
     def list_dirs(self):
         return [d for d in self.base_path.iterdir() if d.is_dir()]
 
     def list_pcap_files(self, directory_name):
-        directory_path = self.base_path / directory_name
-        return directory_path.rglob("*.pcap")
+        return list(directory_name.rglob("*.pcap"))
+    
+    def save_time_to_session(self, device_name, time_to_session):
+        for collection_time in time_to_session:
+            collection_dir = self.cache_path / "collection_times" / str(collection_time)
+            collection_dir.mkdir(parents=True, exist_ok=True)
+            for session, session_id in time_to_session[collection_time]:
+                session_file = collection_dir / device_name / f"session_{session_id}.parquet"
+                session_file.parent.mkdir(parents=True, exist_ok=True)
+                session.to_parquet(session_file, index=False)
+
+    def list_collection_times(self):
+        collection_dirs = self.cache_path / "collection_times"
+        return collection_dirs.iterdir()
+    
+    def cache_exists(self):
+        return self.cache_path.exists()
 
     # def save_dataframe(self, df, rel_path):
     #     full_path = self.base_path / rel_path
@@ -68,6 +96,15 @@ class FTPStore(DataStore):
         filenames = self.ftp.nlst()
         pcap_files = [f for f in filenames if f.endswith(".pcap")]
         return [Path(directory_name) / Path(name) for name in pcap_files]
+    
+    def save_time_to_session(self, device_name, time_to_session):
+        pass
+
+    def list_collection_times(self):
+        pass
+
+    def cache_exists(self):
+        pass
 
     # def save_dataframe(self, df, rel_path):
     #     buffer = BytesIO()
