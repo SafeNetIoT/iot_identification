@@ -3,7 +3,7 @@ from src.features.feature_extraction import FlowManager
 from typing import Optional
 from scapy.all import PcapReader
 import pandas as pd
-from config import SWEEP_EVERY_PKTS, FAST_EXTRACTION_DIRECTORY, RAW_DATA_DIRECTORY
+from config import settings
 import os
 from pathlib import Path
 from src.ml.dataset_preparation import DatasetPreparation as Prep
@@ -101,24 +101,24 @@ class FastExtractionPipeline:
                 row = manager.update_flow(pkt, ts)
                 if row:
                     rows.append(row)
-                if pkt_count % SWEEP_EVERY_PKTS == 0:
+                if pkt_count % settings.sweep_every_pkts == 0:
                     rows.extend(manager.sweep(ts))
             rows.extend([manager.evict(k) for k in list(manager.flows.keys())])
 
         return pd.DataFrame(rows)
 
 def main():
-    os.makedirs(FAST_EXTRACTION_DIRECTORY, exist_ok=True)
+    os.makedirs(settings.fast_extraction_directory, exist_ok=True)
     extractor = FastExtractionPipeline()
-    for device in os.listdir(RAW_DATA_DIRECTORY):
+    for device in os.listdir(settings.raw_data_directory):
         device_dfs = []
-        data_dir = Path(f"{RAW_DATA_DIRECTORY}/{device}")
+        data_dir = Path(f"{settings.raw_data_directory}/{device}")
         for pcap_path in data_dir.rglob("*.pcap"): 
             device_df = extractor.extract_features(str(pcap_path))
             device_dfs.append(device_df)
         complete_device = pd.concat(device_dfs, ignore_index=True)
         complete_device = Prep.label_device(complete_device, device)
-        complete_device.to_csv(f"{FAST_EXTRACTION_DIRECTORY}/{device}.csv", index=False)
+        complete_device.to_csv(f"{settings.fast_extraction_directory}/{device}.csv", index=False)
 
 if __name__ == "__main__":
     main()

@@ -1,9 +1,9 @@
 import random 
-from config import TEST_FRACTION, RANDOM_STATE
+from config import settings
 from pandas.errors import EmptyDataError
 
 def evaluate_on_fixed_unseen(unseen_dataset, predict_func, verbose=True): 
-    random.seed(RANDOM_STATE)
+    random.seed(settings.random_state)
     total = 0
     correct = 0
     for device_name, pcap_list in unseen_dataset.items():
@@ -11,7 +11,7 @@ def evaluate_on_fixed_unseen(unseen_dataset, predict_func, verbose=True):
             continue
         if verbose:
             print(f"Evaluating {device_name}: {len(pcap_list)} pcaps")
-        n_samples = max(1, int(len(pcap_list) * TEST_FRACTION))
+        n_samples = max(1, int(len(pcap_list) * settings.test_fraction))
         sampled_pcaps = random.sample(pcap_list, n_samples)
         for pcap_path in sampled_pcaps:
             try:

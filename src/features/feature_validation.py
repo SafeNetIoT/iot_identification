@@ -4,12 +4,12 @@ import os
 from statistics import mean
 import numpy as np
 from utils.file_utils import unpack_feature_groups
-from config import PREPROCESSED_DATA_DIRECTORY
+from config import settings
 import collections
 
 class FeatureValidator:
     def __init__(self) -> None:
-        self.processed_data_directory = PREPROCESSED_DATA_DIRECTORY
+        self.processed_data_directory = settings.preprocessed_data_directory
         self.plot_data = collections.defaultdict(dict) # feature : [{device: val}]
         self.populate_plot_data()
 

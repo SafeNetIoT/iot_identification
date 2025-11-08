@@ -1,7 +1,5 @@
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
-from src.ml.base_model import BaseModel
-import os
 import pandas as pd
 
 

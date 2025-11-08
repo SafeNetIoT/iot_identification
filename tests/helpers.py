@@ -2,7 +2,7 @@ import random
 import os
 import pandas as pd
 from typing import Optional
-from config import RANDOM_STATE, DESIRED_ACCURACY, TEST_FRACTION, MAC_ADDRESS_MAP_PATH
+from config import settings
 from pandas.errors import EmptyDataError
 import json
 from src.utils.evaluation import evaluate_on_fixed_unseen
@@ -54,9 +54,9 @@ def count_input_conversations(pcap_path: str) -> int:
 def _run_unseen_evaluation(model, predict_func):
     unseen_data = model.unseen_sessions
     acc = evaluate_on_fixed_unseen(unseen_dataset=unseen_data, predict_func=predict_func)
-    assert acc >= DESIRED_ACCURACY, "Accuracy lower than desired"
+    assert acc >= settings.desired_accuracy, "Accuracy lower than desired"
 
 def get_mac_address_map():
-    with open(MAC_ADDRESS_MAP_PATH, 'r') as file:
+    with open(settings.mac_address_map_path, 'r') as file:
         mac_address_map = json.load(file)
     return mac_address_map

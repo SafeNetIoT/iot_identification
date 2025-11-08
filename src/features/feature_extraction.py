@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import pandas as pd
 from typing import Optional
-from config import RAW_DATA_DIRECTORY, PREPROCESSED_DATA_DIRECTORY, MAX_AGE_S, SWEEP_EVERY_PKTS
+from config import settings
 
 from src.features.flow_state import FlowState, FlowStateFactory
 from scapy.all import PcapReader
@@ -237,7 +237,7 @@ class FlowManager:
         stale_keys = [
             key for key, fs in self.flows.items()
             if (ts - fs.last) >= fs.idle_timeout()
-            or (fs.last - fs.first) >= MAX_AGE_S
+            or (fs.last - fs.first) >= settings.max_age_s
         ]
         rows = [self.evict(key) for key in stale_keys]
         return [r for r in rows if r]
@@ -267,23 +267,23 @@ class ExtractionPipeline:
                 row = manager.update_flow(pkt, ts)
                 if row:
                     rows.append(row)
-                if pkt_count % SWEEP_EVERY_PKTS == 0:
+                if pkt_count % settings.sweep_every_pkts == 0:
                     rows.extend(manager.sweep(ts))
             rows.extend([manager.evict(k) for k in list(manager.flows.keys())])
 
         return pd.DataFrame(rows)
 
-def main():
-    os.makedirs(PREPROCESSED_DATA_DIRECTORY, exist_ok=True)
+def main(): 
+    os.makedirs(settings.preprocessed_data_directory, exist_ok=True)
     extractor = ExtractionPipeline()
-    for device in os.listdir(RAW_DATA_DIRECTORY):
+    for device in os.listdir(settings.raw_data_directory):
         device_dfs = []
-        data_dir = Path(f"{RAW_DATA_DIRECTORY}/{device}")
+        data_dir = Path(f"{settings.raw_data_directory}/{device}")
         for pcap_path in data_dir.rglob("*.pcap"): 
             device_df = extractor.extract_features(str(pcap_path))
             device_dfs.append(device_df)
         complete_device = pd.concat(device_dfs, ignore_index=True)
-        complete_device.to_csv(f"{PREPROCESSED_DATA_DIRECTORY}/{device}.csv", index=False)
+        complete_device.to_csv(f"{settings.preprocessed_data_directory}/{device}.csv", index=False)
 
 if __name__ == "__main__":
     print('running...')

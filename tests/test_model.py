@@ -1,7 +1,4 @@
-from config import DESIRED_ACCURACY, TEST_FRACTION, RANDOM_STATE
 import pytest
-from pathlib import Path
-from pandas.errors import EmptyDataError
 from unittest.mock import patch, MagicMock
 from sklearn.ensemble import RandomForestClassifier
 import joblib 
