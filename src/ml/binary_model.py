@@ -4,6 +4,7 @@ from pathlib import Path
 import random
 from src.utils.exceptions import ModelStateError
 from pandas.errors import EmptyDataError
+from config import settings
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -80,7 +81,7 @@ class BinaryModel(Manager):
         result_class, score = None, 0
         for model in self.model_arr:
             predicted_class, confidence = model.predict(X)
-            if predicted_class == 0:
+            if predicted_class == 0 or confidence < settings.identification_threshold:
                 continue
             if confidence > score:
                 result_class, score = model.name, confidence

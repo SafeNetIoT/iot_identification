@@ -10,6 +10,8 @@ import re
 import time
 import subprocess
 
+from src.event_handling.idenitify import identify
+
 hardcoded_devices = {'38:42:b:68:76:30': 'sonos_speaker',
  '90:f8:2e:87:c1:2e': 'amazon_echo_dot_5',
  '5c:47:5e:60:23:01': 'ring_doorbell',
@@ -170,18 +172,8 @@ def get_mac_vendor(dev_mac):
     
 
 # Function to identify the device
-def identify_device(dev_mac):
-    default_type = "generic_smartphone"
-    
-    # perform device identification
-    time.sleep(10)
-    
-    # collect traffic for some time and take all info...
-    # then choose the type
-    if dev_mac in hardcoded_devices:
-        return hardcoded_devices[dev_mac]
-    
-    return default_type
+def identify_device():
+    return identify()
     
 # Function to check if the MAC address is valid
 def check_mac(dev_mac):
