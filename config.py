@@ -62,5 +62,6 @@ class Settings(BaseSettings):
     redis_settings:RedisSettings = RedisSettings()
     # ftp_settings:FTPSettings = FTPSettings()
     default_store: str = "local"
+    identification_threshold: float = 0.7
 
 settings = Settings()

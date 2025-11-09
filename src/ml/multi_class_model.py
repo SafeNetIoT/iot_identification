@@ -20,8 +20,8 @@ class MultiClassModel(Manager):
         self.save_all(save_input_data=True)
 
     def multi_predict(self, pcap_file):
-        model_arr = self.load_model()
-        model = model_arr[0]
+        self.load_model()
+        model = self.model_arr[0]
         df = self.fast_extractor.extract_features(pcap_file)
         if df.empty:
             return None
@@ -38,39 +38,9 @@ def main(): # still shows incorrect results
     # manager = MultiClassModel()
     # manager.run()
 
-    # manager = MultiClassModel(loading_dir="models/2025-10-25/multiclass_model5/")
-    # res = manager.multi_predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
-    # print("res:", res)
-
-
-    from pathlib import Path
-    from config import RAW_DATA_DIRECTORY
-    from pandas.errors import EmptyDataError
-    manager = MultiClassModel(loading_dir="models/2025-10-23/multiclass_model8")
-    prev = ""
-    correct, total = 0, 0
-    for subdir in Path(RAW_DATA_DIRECTORY).iterdir():
-        if not subdir.is_dir():
-            continue
-        for f in subdir.rglob("*"):
-            if f.is_file():
-                try:
-                    device = str(f).split("/")[2]
-                    if device == prev:
-                        continue
-                    print("truth:", device)
-                    res = manager.multi_predict(str(f))
-                    print("prediction", res)
-                    print()
-                    if res == device:
-                        correct += 1
-                    total += 1
-                except EmptyDataError:
-                    continue
-                except ValueError:
-                    continue
-                prev = device
-    print(correct, total)
+    manager = MultiClassModel(loading_dir="models/2025-10-25/multiclass_model5/")
+    res = manager.multi_predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+    print("res:", res)
 
 if __name__ == "__main__":
     main()
