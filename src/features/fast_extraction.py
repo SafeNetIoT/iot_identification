@@ -82,11 +82,11 @@ class FastExtractionPipeline:
         self.time_interval = time_interval
         self.registry = SessionRegistry()
 
-    def extract_features(self, input_pcap):
+    def extract_features(self, input_data):
         manager = FlowManager(extractor = FastFeatureExtractor, registry=self.registry)
         rows = []
 
-        with PcapReaderFactory(input_pcap) as pcap:
+        with PcapReaderFactory(input_data) as pcap:
             try:
                 first_pkt = next(pcap)
                 self.registry.set_first_pkt(first_pkt)
