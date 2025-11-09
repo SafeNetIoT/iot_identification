@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from src.ml.dataset_preparation import DatasetPreparation as Prep
 from src.features.session_registry import SessionRegistry
+from src.features.pcap_reader_factory import PcapReaderFactory
 
 @dataclass
 class ValidFeatures:
@@ -85,7 +86,7 @@ class FastExtractionPipeline:
         manager = FlowManager(extractor = FastFeatureExtractor, registry=self.registry)
         rows = []
 
-        with PcapReader(input_pcap) as pcap:
+        with PcapReaderFactory(input_pcap) as pcap:
             try:
                 first_pkt = next(pcap)
                 self.registry.set_first_pkt(first_pkt)
