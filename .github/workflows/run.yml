@@ -55,6 +55,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Fetch DNS dataset
+        run: |
+          bash scripts/raw_data.sh
+
+      - name: Cache dataset
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: dns-dataset-v1
+
       - name: Download model artifact
         uses: actions/download-artifact@v4
         with:
