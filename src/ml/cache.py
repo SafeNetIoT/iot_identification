@@ -133,6 +133,7 @@ class Cache:
 
     def build(self):
         if not self.data_store.cache_exists():
+            print("::notice::Cache not found — rebuilding sessions...")
             self.cache_sessions()
         self.map_sessions()
         # self.unseen_sessions = self.load_sessions("unseen_sessions")
