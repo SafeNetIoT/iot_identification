@@ -170,7 +170,7 @@ class TimeBasedCache(Cache):
         return session_map
 
     def build(self):
-        if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
+        if not self.data_store.cache_exists():
             self.cache_sessions()
         session_map = self.map_sessions()
         # unseen_session = self.load_sessions("unseen_sessions")
