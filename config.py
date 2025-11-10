@@ -2,6 +2,9 @@ import ipaddress
 from typing import List, Optional, Dict
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
+import os
+
+PROJECT_ROOT = os.getenv("PROJECT_ROOT")
 
 class ModelArchitecture(BaseModel):
     n_estimators: int
@@ -28,14 +31,14 @@ class RedisSettings(BaseSettings):
     db: int = 0
 
 class Settings(BaseSettings):
-    preprocessed_data_directory: str = "data/preprocessed"
-    fast_extraction_directory: str = "data/fast_extraction"
-    raw_data_directory: str = "data/raw"
-    valid_features_directory: str = "src/features/features.txt"
-    feature_menu_path: str = "src/features/feature_menu.yml"
-    models_directory: str = "models"
-    session_cache_path: str = "session_cache"
-    unsw_dataset_path: str = "data/unsw_unzipped"
+    preprocessed_data_directory: str = PROJECT_ROOT + "data/preprocessed"
+    fast_extraction_directory: str = PROJECT_ROOT + "data/fast_extraction"
+    raw_data_directory: str = PROJECT_ROOT + "data/raw"
+    valid_features_directory: str = PROJECT_ROOT + "src/features/features.txt"
+    feature_menu_path: str = PROJECT_ROOT + "src/features/feature_menu.yml"
+    models_directory: str = PROJECT_ROOT + "models"
+    session_cache_path: str = PROJECT_ROOT + "session_cache"
+    unsw_dataset_path: str = PROJECT_ROOT + "data/unsw_unzipped"
     time_intervals: List[int] = [10, 20, 30, 45, 60, 75, 90, 105]
     internal_nets: List[ipaddress.IPv4Network] = [ipaddress.ip_network("10.0.0.0/8"), ipaddress.ip_network("172.16.0.0/12"), ipaddress.ip_network("192.168.0.0/16")]
     tcp_idle_s: int = 300
@@ -55,10 +58,10 @@ class Settings(BaseSettings):
     random_state: int = 42
     unseen_fraction: float = 0.1
     testing: TestingConfig = TestingConfig(fast_mode=1, sample_fraction=0.1)
-    model_under_test: str = "models/2025-10-25/binary_model1"
-    multiclass_model_under_test: str = "models/2025-10-25/multiclass_model5"
+    model_under_test: str = PROJECT_ROOT + "models/2025-10-25/binary_model1"
+    multiclass_model_under_test: str = PROJECT_ROOT + "models/2025-10-25/multiclass_model5"
     desired_accuracy: float = 0.85
-    mac_address_map_path: str = "mac_address_map.json"
+    mac_address_map_path: str = PROJECT_ROOT + "mac_address_map.json"
     redis_settings:RedisSettings = RedisSettings()
     # ftp_settings:FTPSettings = FTPSettings()
     default_store: str = "local"
