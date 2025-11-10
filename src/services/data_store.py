@@ -50,6 +50,7 @@ class LocalStore(DataStore):
     def save_time_to_session(self, device_name, time_to_session):
         for collection_time in time_to_session:
             collection_dir = self.cache_path / "collection_times" / str(collection_time)
+            print("::notice::cache_dir:", collection_dir)
             collection_dir.mkdir(parents=True, exist_ok=True)
             for session, session_id in time_to_session[collection_time]:
                 session_file = collection_dir / device_name / f"session_{session_id}.parquet"
