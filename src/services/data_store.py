@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 from ftplib import FTP
 from io import BytesIO
-from config import settings
+from config import settings, PROJECT_ROOT
 
 class DataStore(ABC):
     """Abstract interface for data access layer."""
@@ -38,8 +38,8 @@ class DataStore(ABC):
 
 class LocalStore(DataStore):
     def __init__(self, data_path):
-        self.base_path = Path(data_path)
-        self.cache_path = Path(settings.session_cache_path)
+        self.base_path = Path(PROJECT_ROOT) / data_path
+        self.cache_path = Path(PROJECT_ROOT) / settings.session_cache_path
 
     def list_dirs(self):
         return [d for d in self.base_path.iterdir() if d.is_dir()]
