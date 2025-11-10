@@ -39,7 +39,7 @@ class DataStore(ABC):
 class LocalStore(DataStore):
     def __init__(self, data_path):
         self.base_path = Path(PROJECT_ROOT) / data_path
-        self.cache_path = Path(PROJECT_ROOT) / settings.session_cache_path
+        self.cache_path = Path(settings.session_cache_path)
 
     def list_dirs(self):
         return [d for d in self.base_path.iterdir() if d.is_dir()]
