@@ -59,6 +59,7 @@ class Cache:
         return sessions
 
     def cache_sessions(self):
+        print("::notice::cache dir:", self.data_store.cache_path)
         for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
             # print(device_name)
