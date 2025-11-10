@@ -58,6 +58,7 @@ class LocalStore(DataStore):
                 session.to_parquet(session_file, index=False)
 
     def list_collection_times(self):
+        print("::notice::cache path (different?)", self.cache_path)
         collection_dirs = self.cache_path / "collection_times"
         print("::notice::collection dirs:", collection_dirs)
         return collection_dirs.iterdir()
