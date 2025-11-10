@@ -59,6 +59,7 @@ class LocalStore(DataStore):
 
     def list_collection_times(self):
         collection_dirs = self.cache_path / "collection_times"
+        print("::notice::collection dirs:", collection_dirs)
         return collection_dirs.iterdir()
     
     def cache_exists(self):
