@@ -134,16 +134,26 @@ class Cache:
                         self.device_sessions[device_name][session_index] = pd.concat([placeholder, session], ignore_index=True)
 
     def build(self):
+        cwd = Path.cwd().resolve()
+        print(f"::notice::CWD: {cwd}", flush=True)
+        print(f"::notice::Cache path: {self.data_store.cache_path.resolve()}", flush=True)
+
         if not self.data_store.cache_exists():
-            print("::notice::Cache not found — rebuilding sessions...")
+            print("::notice::Cache not found, rebuilding sessions...", flush=True)
             self.cache_sessions()
-            print("::notice::cache build successfully", self.data_store.cache_path)
+            print(f"::notice::Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
+            print("::notice::Listing cache directory:", flush=True)
             for path in self.data_store.cache_path.rglob("*"):
-                print(f"::notice file={path}::Found {path.name}", flush=True)
+                print(f"::notice::{path.resolve()}", flush=True)
         else:
-            print("::notice::Cache exists")
+            print("::notice::Cache already exists", flush=True)
+
+        print("::notice::After build, checking if collection_times exists:", flush=True)
+        collection_dir = Path(self.data_store.cache_path) / "collection_times"
+        print(f"::notice::collection_dir={collection_dir.resolve()}", flush=True)
+        print(f"::notice::Exists? {collection_dir.exists()}", flush=True)
+
         self.map_sessions()
-        # self.unseen_sessions = self.load_sessions("unseen_sessions")
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
 
