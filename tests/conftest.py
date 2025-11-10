@@ -37,7 +37,6 @@ def binary_model_under_test():
     """Creates a binary model instance with a loaded model specified in config"""
     model = BinaryModel(loading_dir=settings.model_under_test)
     model.set_cache()
-    print("::notice::cache path", model.cache.data_store.cache_path)
     return model
 
 @pytest.fixture

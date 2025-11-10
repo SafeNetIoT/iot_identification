@@ -136,7 +136,7 @@ class Cache:
         if not self.data_store.cache_exists():
             print("::notice::Cache not found — rebuilding sessions...")
             self.cache_sessions()
-            print("::notice::cache build successfully")
+            print("::notice::cache build successfully", self.data_store.cache_path)
         else:
             print("::notice::Cache exists")
         self.map_sessions()
