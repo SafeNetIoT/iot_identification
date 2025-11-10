@@ -61,7 +61,14 @@ class LocalStore(DataStore):
         return collection_dirs.iterdir()
     
     def cache_exists(self):
-        return self.cache_path.exists()
+        collection_path = self.cache_path / "collection_times"
+        if not collection_path.exists():
+            return False
+        try:
+            next(collection_path.iterdir())
+            return True
+        except StopIteration:
+            return False
 
     # def save_dataframe(self, df, rel_path):
     #     full_path = self.base_path / rel_path
