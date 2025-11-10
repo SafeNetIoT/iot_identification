@@ -9,6 +9,8 @@ jobs:
   prepare-model:
     name: Prepare model artifact
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,22 +20,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Export model path from config.py
+      - name: Download model archive from GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "MODEL_UNDER_TEST=$(python -c 'from config import settings; print(settings.model_under_test)')" >> $GITHUB_ENV
-          echo "MULTICLASS_MODEL_UNDER_TEST=$(python -c 'from config import settings; print(settings.multiclass_model_under_test)')" >> $GITHUB_ENV
+          mkdir -p ${{ runner.temp }}/model
+          gh release download latest --pattern "*.tar.gz" --dir ${{ runner.temp }}/model
+          echo "Extracting model archive..."
+          tar -xzf ${{ runner.temp }}/model/*.tar.gz -C ${{ runner.temp }}/model
 
       - name: Stage model under test
         run: |
-          echo "Staging model from $MODEL_UNDER_TEST"
+          echo "Staging extracted model files..."
           mkdir -p model_output
-          cp "$MODEL_UNDER_TEST" model_output/model.pt
+          cp -r ${{ runner.temp }}/model/* model_output/
 
       - name: Upload model artifact
         uses: actions/upload-artifact@v4
         with:
           name: model-under-test
-          path: model_output/model.pt
+          path: model_output
 
 
   test:
@@ -57,7 +63,7 @@ jobs:
 
       - name: Run tests
         env:
-          MODEL_PATH: ${{ runner.temp }}/model/model.pt
+          MODEL_PATH: ${{ runner.temp }}/model
         run: |
-          echo "Using model at $MODEL_PATH"
+          echo "Using model files from $MODEL_PATH"
           pytest -s
