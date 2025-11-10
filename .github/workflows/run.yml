@@ -74,7 +74,7 @@ jobs:
       - name: Cache dataset
         uses: actions/cache@v4
         with:
-          path: data/raw
+          path: ${{ github.workspace }}/data/raw
           key: dns-dataset-v1
 
       - name: Download model artifact

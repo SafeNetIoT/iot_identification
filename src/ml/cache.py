@@ -10,6 +10,7 @@ from src.ml.dataset_preparation import DatasetPreparation as prep
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
+from src.utils.file_utils import print_file_tree
 
 class Cache:
     def __init__(self):
@@ -137,6 +138,8 @@ class Cache:
             print("::notice::Cache not found — rebuilding sessions...")
             self.cache_sessions()
             print("::notice::cache build successfully", self.data_store.cache_path)
+            for path in self.data_store.cache_path.rglob("*"):
+                print(f"::notice file={path}::Found {path.name}", flush=True)
         else:
             print("::notice::Cache exists")
         self.map_sessions()
