@@ -3,8 +3,9 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 import os
+from pathlib import Path
 
-PROJECT_ROOT = os.getenv("PROJECT_ROOT", "./")
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", Path(__file__).resolve().parent.parent))
 
 class ModelArchitecture(BaseModel):
     n_estimators: int
