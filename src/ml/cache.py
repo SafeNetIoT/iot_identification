@@ -85,12 +85,10 @@ class Cache:
                             break
                 session_id += 1
                 self.session_counts[device_name] = session_id
-                print("::notice::CACHE_SESSIONS added session to session_counts")
             self.data_store.save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
         # self.save_session(self.unseen_sessions, "unseen_sessions")
         self.save_unseen()
-        print("::notice::CACHE_SESSIOSN cache created")
 
     def save_session_counts(self):
         self.redis.set("session_counts", self.session_counts)
@@ -138,16 +136,6 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
-            print(f"::notice::BUILD Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
-            print_file_tree()
-        else:
-            print("::notice::BUILD Cache already exists", flush=True)
-
-        # print("::notice::After build, checking if collection_times exists:", flush=True)
-        # collection_dir = Path(self.data_store.cache_path) / "collection_times"
-        # print(f"::notice::collection_dir={collection_dir.resolve()}", flush=True)
-        # print(f"::notice::Exists? {collection_dir.exists()}", flush=True)
-
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
@@ -171,6 +159,7 @@ class TimeBasedCache(Cache):
             for device_dir in collection_time_dir.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
+                    print("::notice::session_file:", str(session_file))
                     session_id = int(session_file.stem.split("_")[1])
                     session_df = pd.read_parquet(str(session_file))
                     if session_id not in session_ptr:
@@ -184,7 +173,6 @@ class TimeBasedCache(Cache):
 
     def build(self):
         if not self.data_store.cache_exists():
-            print("::notice::Cache not found — rebuilding sessions...")
             self.cache_sessions()
         session_map = self.map_sessions()
         # unseen_session = self.load_sessions("unseen_sessions")

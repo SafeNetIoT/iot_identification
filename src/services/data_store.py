@@ -40,7 +40,6 @@ class LocalStore(DataStore):
     def __init__(self, data_path):
         self.base_path = Path(PROJECT_ROOT) / data_path
         self.cache_path = (settings.session_cache_path).resolve()
-        print("::notice::LOCALSTORE cache path init:", self.cache_path)
 
     def list_dirs(self):
         return [d for d in self.base_path.iterdir() if d.is_dir()]
@@ -49,10 +48,8 @@ class LocalStore(DataStore):
         return list(directory_name.rglob("*.pcap"))
     
     def save_time_to_session(self, device_name, time_to_session):
-        print("::notice::DATA_STORE.SAVE time to session starting")
         for collection_time in time_to_session:
             collection_dir = self.cache_path / "collection_times" / str(collection_time)
-            print("::notice::DATA_STORE.SAVE cache_dir:", collection_dir)
             collection_dir.mkdir(parents=True, exist_ok=True)
             for session, session_id in time_to_session[collection_time]:
                 session_file = collection_dir / device_name / f"session_{session_id}.parquet"
@@ -60,9 +57,7 @@ class LocalStore(DataStore):
                 session.to_parquet(session_file, index=False)
 
     def list_collection_times(self):
-        print("::notice::DATASTORE.LIST_COLLECTION_TIMES cache path (different?)", self.cache_path)
         collection_dirs = self.cache_path / "collection_times"
-        print("::notice::DATASTORE.LIST_COLLECTION_TIMES collection dirs:", collection_dirs)
         return collection_dirs.iterdir()
     
     def cache_exists(self):
