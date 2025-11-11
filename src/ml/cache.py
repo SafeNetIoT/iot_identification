@@ -125,6 +125,7 @@ class Cache:
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
+                    print("::notice::session_file:", str(session_file))
                     session = pd.read_parquet(session_file)
                     session_index = int(session_file.stem.split("_")[1])
                     placeholder = self.device_sessions[device_name][session_index]
