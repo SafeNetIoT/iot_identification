@@ -139,6 +139,7 @@ class Cache:
         if not self.data_store.cache_exists():
             self.cache_sessions()
             print(f"::notice::BUILD Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
+            print_file_tree()
         else:
             print("::notice::BUILD Cache already exists", flush=True)
 
