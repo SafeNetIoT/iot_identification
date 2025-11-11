@@ -60,7 +60,6 @@ class Cache:
         return sessions
 
     def cache_sessions(self):
-        print("::notice::cache dir:", self.data_store.cache_path)
         for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
             # print(device_name)
@@ -86,6 +85,7 @@ class Cache:
                             break
                 session_id += 1
                 self.session_counts[device_name] = session_id
+                print("::notice::added session to session_counts")
             self.data_store.save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
         # self.save_session(self.unseen_sessions, "unseen_sessions")
@@ -121,7 +121,6 @@ class Cache:
         # seen_cache_dir = self.cache_path / "collection_times"
         # for collection_time in seen_cache_dir.iterdir():
         for collection_time in self.data_store.list_collection_times():
-            print("::notice::collection time dir", collection_time)
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
@@ -134,21 +133,16 @@ class Cache:
                         self.device_sessions[device_name][session_index] = pd.concat([placeholder, session], ignore_index=True)
 
     def build(self):
-        cwd = Path.cwd().resolve()
-        print(f"::notice::CWD: {cwd}", flush=True)
-        print(f"::notice::Cache path: {self.data_store.cache_path.resolve()}", flush=True)
-
         if not self.data_store.cache_exists():
-            print("::notice::Cache not found, rebuilding sessions...", flush=True)
             self.cache_sessions()
             print(f"::notice::Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
         else:
             print("::notice::Cache already exists", flush=True)
 
-        print("::notice::After build, checking if collection_times exists:", flush=True)
-        collection_dir = Path(self.data_store.cache_path) / "collection_times"
-        print(f"::notice::collection_dir={collection_dir.resolve()}", flush=True)
-        print(f"::notice::Exists? {collection_dir.exists()}", flush=True)
+        # print("::notice::After build, checking if collection_times exists:", flush=True)
+        # collection_dir = Path(self.data_store.cache_path) / "collection_times"
+        # print(f"::notice::collection_dir={collection_dir.resolve()}", flush=True)
+        # print(f"::notice::Exists? {collection_dir.exists()}", flush=True)
 
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
