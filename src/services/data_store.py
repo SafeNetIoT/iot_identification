@@ -40,6 +40,7 @@ class LocalStore(DataStore):
     def __init__(self, data_path):
         self.base_path = Path(PROJECT_ROOT) / data_path
         self.cache_path = (settings.session_cache_path).resolve()
+        print("::notice::LOCALSTORE cache path init:", self.cache_path)
 
     def list_dirs(self):
         return [d for d in self.base_path.iterdir() if d.is_dir()]
