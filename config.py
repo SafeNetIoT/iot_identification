@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT"), Path(__file__).resolve().parent)
+PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", Path(__file__).resolve().parent))
 
 class ModelArchitecture(BaseModel):
     n_estimators: int
