@@ -85,12 +85,12 @@ class Cache:
                             break
                 session_id += 1
                 self.session_counts[device_name] = session_id
-                print("::notice::added session to session_counts")
+                print("::notice::CACHE_SESSIONS added session to session_counts")
             self.data_store.save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
         # self.save_session(self.unseen_sessions, "unseen_sessions")
         self.save_unseen()
-        print("::notice::cache created")
+        print("::notice::CACHE_SESSIOSN cache created")
 
     def save_session_counts(self):
         self.redis.set("session_counts", self.session_counts)
@@ -136,9 +136,9 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
-            print(f"::notice::Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
+            print(f"::notice::BUILD Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
         else:
-            print("::notice::Cache already exists", flush=True)
+            print("::notice::BUILD Cache already exists", flush=True)
 
         # print("::notice::After build, checking if collection_times exists:", flush=True)
         # collection_dir = Path(self.data_store.cache_path) / "collection_times"
