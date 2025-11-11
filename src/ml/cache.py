@@ -120,8 +120,8 @@ class Cache:
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
         # seen_cache_dir = self.cache_path / "collection_times"
         # for collection_time in seen_cache_dir.iterdir():
-        print("::notice::list of collection time dirs", self.data_store.list_collection_times())
         for collection_time in self.data_store.list_collection_times():
+            print("::notice::collection time dir", collection_time)
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
