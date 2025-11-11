@@ -117,10 +117,10 @@ class Cache:
 
     def map_sessions(self):
         self.load_session_counts()
-
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
         # seen_cache_dir = self.cache_path / "collection_times"
         # for collection_time in seen_cache_dir.iterdir():
+        print("::notice::list of collection time dirs", self.data_store.list_collection_times())
         for collection_time in self.data_store.list_collection_times():
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
@@ -142,9 +142,6 @@ class Cache:
             print("::notice::Cache not found, rebuilding sessions...", flush=True)
             self.cache_sessions()
             print(f"::notice::Cache built successfully at {self.data_store.cache_path.resolve()}", flush=True)
-            print("::notice::Listing cache directory:", flush=True)
-            for path in self.data_store.cache_path.rglob("*"):
-                print(f"::notice::{path.resolve()}", flush=True)
         else:
             print("::notice::Cache already exists", flush=True)
 
