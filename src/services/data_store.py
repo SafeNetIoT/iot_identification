@@ -48,6 +48,7 @@ class LocalStore(DataStore):
         return list(directory_name.rglob("*.pcap"))
     
     def save_time_to_session(self, device_name, time_to_session):
+        print("::notice::time to session starting")
         for collection_time in time_to_session:
             collection_dir = self.cache_path / "collection_times" / str(collection_time)
             print("::notice::COLLECTION cache_dir:", collection_dir)

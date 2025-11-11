@@ -90,7 +90,7 @@ class Cache:
         self.save_session_counts()
         # self.save_session(self.unseen_sessions, "unseen_sessions")
         self.save_unseen()
-        print("cache created")
+        print("::notice::cache created")
 
     def save_session_counts(self):
         self.redis.set("session_counts", self.session_counts)
@@ -121,6 +121,7 @@ class Cache:
         # seen_cache_dir = self.cache_path / "collection_times"
         # for collection_time in seen_cache_dir.iterdir():
         for collection_time in self.data_store.list_collection_times():
+            print("::notice::MAP SESSIONS collection time")
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
