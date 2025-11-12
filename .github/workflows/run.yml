@@ -12,7 +12,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PROJECT_ROOT: ${{ github.workspace }}
-    defaults: 
+    defaults:
       run:
         working-directory: ${{ github.workspace }}
 
@@ -70,6 +70,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Restore session cache
+        uses: actions/cache@v4
+        with:
+          path: session_cache/
+          key: session-cache-${{ hashFiles('data/raw/**/*.pcap') }}
+          restore-keys: session-cache-
+
       - name: Fetch DNS dataset
         run: |
           bash scripts/raw_data.sh
@@ -84,11 +91,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: model-under-test
-          path: ${{ runner.temp }}/model
+          path: ./artifacts
 
       - name: Run tests
         env:
-          MODEL_PATH: ${{ runner.temp }}/model
+          MODEL_PATH: ./artifacts
         run: |
           echo "Using model files from $MODEL_PATH"
           pytest -s
+
+      - name: Upload session cache (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-cache
+          path: session_cache/
