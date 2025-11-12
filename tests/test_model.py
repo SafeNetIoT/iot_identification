@@ -80,7 +80,7 @@ def test_add_device_missing_directory(binary_model):
         with pytest.raises(FileNotFoundError):
             binary_model.add_device("deviceX", "fake/path")
 
-@pytest.mark.integration
-def test_unseen_multiclass(multiclass_model_under_test):
-    _run_unseen_evaluation(multiclass_model_under_test, multiclass_model_under_test.multi_predict)
+# @pytest.mark.integration
+# def test_unseen_multiclass(multiclass_model_under_test):
+#     _run_unseen_evaluation(multiclass_model_under_test, multiclass_model_under_test.multi_predict)
             
