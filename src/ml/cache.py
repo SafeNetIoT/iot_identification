@@ -120,7 +120,7 @@ class Cache:
         # for collection_time in seen_cache_dir.iterdir():
         # collection_time_dirs = self.data_store.list_collection_times()
         # print("::notice::collection_time_dirs computed", [d for d in collection_time_dirs])
-        for collection_time in self.data_store.cache_path.iterdir():
+        for collection_time in self.data_store.list_collection_times():
             print("::notice::MAP SESSIONS collection time", collection_time)
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
