@@ -5,6 +5,7 @@ from src.ml.multi_class_model import MultiClassModel
 from sklearn.ensemble import RandomForestClassifier
 from config import settings, PROJECT_ROOT
 import os
+from src.utils.file_utils import print_file_tree
 
 @pytest.fixture
 def fake_device_sessions():
@@ -38,6 +39,7 @@ def binary_model_under_test():
     """Creates a binary model instance with a loaded model specified in config"""
     if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
         model_dir = PROJECT_ROOT / "artifacts" / "model_output"
+        print_file_tree()
     else:
         model_dir = settings.model_under_test
     model = BinaryModel(loading_dir=model_dir)
