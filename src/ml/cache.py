@@ -93,6 +93,7 @@ class Cache:
         self.session_counts = self.redis.get("session_counts")
 
     def map_sessions(self):
+        print("::notice::sessions counts exist:", self.redis.exists("session_counts"))
         self.load_session_counts()
         print("::notice:: session counts", self.session_counts)
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}

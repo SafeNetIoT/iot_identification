@@ -70,6 +70,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Restore dataset cache
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: dns-dataset-v1
+
       - name: Restore session cache
         uses: actions/cache@v4
         with:
