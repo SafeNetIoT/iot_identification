@@ -54,5 +54,5 @@ def print_file_tree(root="."):
 #     return cnt
 
 
-if __name__ == "__main__":
-    print(cnt_sess())
+# if __name__ == "__main__":
+#     print(cnt_sess())
