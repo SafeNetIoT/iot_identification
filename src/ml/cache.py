@@ -97,6 +97,7 @@ class Cache:
         if self.local:
             self.redis.set("session_counts", self.session_counts)
         else:
+            print("::notice::saving session counts to a json file")
             with open(self.session_counts_path, 'w') as file:
                 json.dump(self.session_counts, file, indent=2)
 
@@ -104,6 +105,7 @@ class Cache:
         if self.local:
             self.session_counts = self.redis.get("session_counts")
         else:
+            print("::notice::loading session counts from json file")
             with open(self.session_counts_path, 'r') as file:
                 self.session_counts = json.load(file)
 
@@ -126,7 +128,7 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
-        print_file_tree()
+        # print_file_tree()
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
