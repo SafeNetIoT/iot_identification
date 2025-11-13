@@ -58,6 +58,7 @@ class Cache:
         return sessions
 
     def cache_sessions(self):
+        print("::notice::num devices:", len(list(self.data_store.list_dirs())))
         for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
             time_to_session = defaultdict(list)
