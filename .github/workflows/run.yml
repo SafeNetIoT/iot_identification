@@ -74,7 +74,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: session_cache/
-          key: session-cache-${{ hashFiles('data/raw/**/*.pcap') }}
+          key: session-cache-v1
           restore-keys: session-cache-
 
       - name: Fetch DNS dataset
@@ -99,6 +99,20 @@ jobs:
         run: |
           echo "Using model files from $MODEL_PATH"
           pytest -s
+
+      - name: Save session cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: session_cache/
+          key: session-cache-v1
+
+      - name: Save dataset cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: dns-dataset-v1
 
       - name: Upload session cache (for debugging)
         if: always()
