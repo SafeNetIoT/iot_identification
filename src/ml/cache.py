@@ -27,12 +27,23 @@ class Cache:
         self.local = os.getenv("GITHUB_ACTIONS", "").lower() != "true"
         if not self.local:
             self.session_counts_path = settings.session_cache_path / "session_counts.json"
+            self.unseen_path = settings.session_cache_path / "unseen_sessions.json"
 
     def save_unseen(self):
-        self.redis.set("unseen_sessions", self.unseen_sessions)
+        if self.local:
+            self.redis.set("unseen_sessions", self.unseen_sessions)
+        else:
+            print("::notice::saved unseen sessions to json")
+            with open(self.unseen_path, 'w') as file:
+                json.dump(self.unseen_sessions, file, indent=2)
 
     def load_unseen(self):
-        return self.redis.get("unseen_sessions")
+        if self.local:
+            unseen_sessions = self.redis.get("unseen_sessions")
+        else:
+            with open(self.unseen_path, 'r') as file:
+                unseen_sessions = json.load(file)
+        return unseen_sessions
 
     def save_session(self, cache, cache_name):
         root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
@@ -46,22 +57,22 @@ class Cache:
                 else:
                     raise TypeError(f"Unsupported item type {type(item)} in cache for {device}")
 
-    def load_sessions(self, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
-        sessions = {}
-        for device in root.group_keys():
-            device_group = root[device]
-            loaded = []
-            for ds in device_group.values():
-                if ds.dtype.names:
-                    loaded.append(pd.DataFrame(ds[:]))
-                else:
-                    val = ds[()]  # scalar read (not slicing)
-                    if isinstance(val, bytes):
-                        val = val.decode()
-                    loaded.append(Path(val))
-            sessions[device] = loaded
-        return sessions
+    # def load_sessions(self, cache_name):
+    #     root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
+    #     sessions = {}
+    #     for device in root.group_keys():
+    #         device_group = root[device]
+    #         loaded = []
+    #         for ds in device_group.values():
+    #             if ds.dtype.names:
+    #                 loaded.append(pd.DataFrame(ds[:]))
+    #             else:
+    #                 val = ds[()]  # scalar read (not slicing)
+    #                 if isinstance(val, bytes):
+    #                     val = val.decode()
+    #                 loaded.append(Path(val))
+    #         sessions[device] = loaded
+    #     return sessions
 
     def cache_sessions(self):
         print("::notice::num devices:", len(list(self.data_store.list_dirs())))
