@@ -23,6 +23,9 @@ class Cache:
         self.collection_times = settings.time_intervals
         self.redis = RedisCache()
         self.unseen_sessions = defaultdict(list)
+        self.local = os.getenv("GITHUB_ACTIONS", "").lower() == "true"
+        if not self.local:
+            self.session_counts_path = settings.session_cache_path / "session_counts.json"
 
     def save_unseen(self):
         self.redis.set("unseen_sessions", self.unseen_sessions)
@@ -90,15 +93,21 @@ class Cache:
         self.save_unseen()
 
     def save_session_counts(self):
-        self.redis.set("session_counts", self.session_counts)
+        if self.local:
+            self.redis.set("session_counts", self.session_counts)
+        else:
+            with open(self.session_counts_path, 'w') as file:
+                json.dump(self.session_counts, file, indent=2)
 
     def load_session_counts(self):
-        self.session_counts = self.redis.get("session_counts")
+        if self.local:
+            self.session_counts = self.redis.get("session_counts")
+        else:
+            with open(self.session_counts_path, 'r') as file:
+                self.session_counts = json.load(file)
 
     def map_sessions(self):
         self.load_session_counts()
-        if self.session_counts is None: # CI specific
-            self.session_counts = count_sessions()
         print("::notice:: session counts", self.session_counts)
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
         for collection_time in self.data_store.list_collection_times():
@@ -157,3 +166,8 @@ class TimeBasedCache(Cache):
         # unseen_session = self.load_sessions("unseen_sessions")
         unseen_sessions = self.load_unseen()
         return session_map, unseen_sessions
+
+if __name__ == "__main__":
+    cache = Cache()
+    cache.cache_sessions()
+    print(cache.session_counts)
