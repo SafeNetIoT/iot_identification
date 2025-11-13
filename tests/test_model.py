@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sklearn.ensemble import RandomForestClassifier
 import joblib 
-import random
+import os
 from conftest import DummyModel
 from datetime import datetime
 from tests.helpers import _run_unseen_evaluation
@@ -80,7 +80,8 @@ def test_add_device_missing_directory(binary_model):
         with pytest.raises(FileNotFoundError):
             binary_model.add_device("deviceX", "fake/path")
 
-# @pytest.mark.integration
-# def test_unseen_multiclass(multiclass_model_under_test):
-#     _run_unseen_evaluation(multiclass_model_under_test, multiclass_model_under_test.multi_predict)
+@pytest.mark.integration
+@pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Skip on CI")
+def test_unseen_multiclass(multiclass_model_under_test):
+    _run_unseen_evaluation(multiclass_model_under_test, multiclass_model_under_test.multi_predict)
             
