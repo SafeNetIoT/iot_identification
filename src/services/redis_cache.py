@@ -13,6 +13,10 @@ class RedisCache:
             db=RedisSettings().db,
             decode_responses=False,  # store bytes for pickled data
         )
+        if self.redis.ping():
+            print("::notice::redis pings")
+        else:
+            print("::notice::redis not there")
 
     def set(self, key: str, value, expire: int | None = None):
         """Set a key to a pickled value with optional expiration (in seconds)."""
