@@ -75,14 +75,14 @@ jobs:
         with:
           path: data/raw
           key: dns-dataset-v3
-          restore-keys: dns-dataset-
+          restore-keys: dns-dataset-v3
 
       - name: Restore session cache
         uses: actions/cache@v4
         with:
           path: session_cache/
           key: session-cache-v3
-          restore-keys: session-cache-
+          restore-keys: session-cache-v3
 
       - name: Inspect session cache contents
         run: |
