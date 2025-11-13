@@ -11,5 +11,5 @@ git clone --depth 1 https://github.com/SafeNetIoT/doh_iot.git "$TMP_DIR"
 mkdir -p "$TARGET_DIR"
 cp -r "$TMP_DIR/data/dns_only"/* "$TARGET_DIR/"
 
-echo "✅ Copied data into $TARGET_DIR"
+echo "Copied data into $TARGET_DIR"
 ls -R "$TARGET_DIR"
