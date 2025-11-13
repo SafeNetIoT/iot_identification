@@ -27,3 +27,14 @@ def print_file_tree(root="."):
         subindent = " " * 4 * (level + 1)
         for f in filenames:
             print(f"{subindent}- {f}")
+
+def count_sessions():
+    directory_path = settings.session_cache_path / "collection_times"
+    session_counter = {}
+    for collection_time in directory_path.iterdir():
+        for device_name in collection_time.iterdir():
+            for session_file in device_name.iterdir():
+                session_id = int(session_file.stem.split("_")[1])
+                if session_id > session_counter.get(device_name, -1):
+                    session_counter = session_id
+    return session_counter

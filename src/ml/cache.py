@@ -10,6 +10,8 @@ from src.ml.dataset_preparation import DatasetPreparation as prep
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
+import os
+from src.utils.file_utils import count_sessions
 
 class Cache:
     def __init__(self):
@@ -113,6 +115,8 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
+        if self.session_counts is None: # CI specific
+            self.session_counts = count_sessions()
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
