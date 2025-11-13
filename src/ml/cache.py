@@ -10,7 +10,6 @@ from src.ml.dataset_preparation import DatasetPreparation as prep
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
-from src.utils.file_utils import print_file_tree
 
 class Cache:
     def __init__(self):
@@ -62,7 +61,6 @@ class Cache:
     def cache_sessions(self):
         for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
-            # print(device_name)
             time_to_session = defaultdict(list)
             session_id = 0
             for device_pcap in self.data_store.list_pcap_files(device_dir):
@@ -87,39 +85,17 @@ class Cache:
                 self.session_counts[device_name] = session_id
             self.data_store.save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
-        # self.save_session(self.unseen_sessions, "unseen_sessions")
         self.save_unseen()
 
     def save_session_counts(self):
         self.redis.set("session_counts", self.session_counts)
-        # output_directory = self.cache_path / "session_counts.json"
-        # with open(output_directory, 'w') as file:
-        #     json.dump(self.session_counts, file, indent=2)
 
     def load_session_counts(self):
         self.session_counts = self.redis.get("session_counts")
-        # output_directory = self.cache_path / "session_counts.json"
-        # if len(self.session_counts) != 0:
-        #     return self.session_counts
-        # with open(output_directory, 'r') as file:
-        #     self.session_counts = json.load(file)
-            
-    # def _save_time_to_session(self, device_name, time_to_session):
-    #     for collection_time in time_to_session:
-    #         collection_dir = self.cache_path / "collection_times" / str(collection_time)
-    #         collection_dir.mkdir(parents=True, exist_ok=True)
-    #         for session, session_id in time_to_session[collection_time]:
-    #             session_file = collection_dir / device_name / f"session_{session_id}.parquet"
-    #             session_file.parent.mkdir(parents=True, exist_ok=True)
-    #             session.to_parquet(session_file, index=False)
 
     def map_sessions(self):
         self.load_session_counts()
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
-        # seen_cache_dir = self.cache_path / "collection_times"
-        # for collection_time in seen_cache_dir.iterdir():
-        # collection_time_dirs = self.data_store.list_collection_times()
-        # print("::notice::collection_time_dirs computed", [d for d in collection_time_dirs])
         for collection_time in self.data_store.list_collection_times():
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
@@ -158,7 +134,6 @@ class TimeBasedCache(Cache):
             for device_dir in collection_time_dir.iterdir():
                 device_name = device_dir.name
                 for session_file in device_dir.iterdir():
-                    print("::notice::session_file:", str(session_file))
                     session_id = int(session_file.stem.split("_")[1])
                     session_df = pd.read_parquet(str(session_file))
                     if session_id not in session_ptr:
