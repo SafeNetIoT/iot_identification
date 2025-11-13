@@ -11,6 +11,7 @@ from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
 import os
+from src.utils.file_utils import print_file_tree
 
 
 class Cache:
@@ -125,6 +126,7 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
+        print_file_tree()
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
