@@ -13,7 +13,6 @@ from src.services.redis_cache import RedisCache
 
 class Cache:
     def __init__(self):
-        # self.cache_path = Path(settings.session_cache_path)
         self.data_store = DataStoreFactory.create(settings.raw_data_directory)
         self.fast_extractor = FastExtractionPipeline()
         self.registry = self.fast_extractor.registry # maybe a method
@@ -95,6 +94,7 @@ class Cache:
 
     def map_sessions(self):
         self.load_session_counts()
+        print("::notice:: session counts", self.session_counts)
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
         for collection_time in self.data_store.list_collection_times():
             for device_dir in collection_time.iterdir():
