@@ -24,7 +24,7 @@ class Cache:
         self.collection_times = settings.time_intervals
         self.redis = RedisCache()
         self.unseen_sessions = defaultdict(list)
-        self.local = os.getenv("GITHUB_ACTIONS", "").lower() == "true"
+        self.local = os.getenv("GITHUB_ACTIONS", "").lower() != "true"
         if not self.local:
             self.session_counts_path = settings.session_cache_path / "session_counts.json"
 
