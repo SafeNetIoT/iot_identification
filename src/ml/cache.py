@@ -11,7 +11,7 @@ from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
 import os
-from src.utils.file_utils import count_sessions
+
 
 class Cache:
     def __init__(self):
