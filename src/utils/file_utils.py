@@ -36,5 +36,5 @@ def count_sessions():
             for session_file in device_name.iterdir():
                 session_id = int(session_file.stem.split("_")[1])
                 if session_id > session_counter.get(device_name, -1):
-                    session_counter[device_name] = session_id
+                    session_counter[device_name.name] = session_id
     return session_counter
