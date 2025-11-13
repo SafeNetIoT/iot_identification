@@ -38,7 +38,7 @@ def binary_model():
 def binary_model_under_test():
     """Creates a binary model instance with a loaded model specified in config"""
     if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
-        model_dir = PROJECT_ROOT / "artifacts" / "model_output"
+        model_dir = PROJECT_ROOT / "artifacts"
         print_file_tree()
     else:
         model_dir = settings.model_under_test
