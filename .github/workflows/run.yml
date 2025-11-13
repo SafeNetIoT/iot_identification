@@ -74,14 +74,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/raw
-          key: dns-dataset-v2
+          key: dns-dataset-v3
           restore-keys: dns-dataset-
 
       - name: Restore session cache
         uses: actions/cache@v4
         with:
           path: session_cache/
-          key: session-cache-v2
+          key: session-cache-v3
           restore-keys: session-cache-
 
       - name: Inspect session cache contents
@@ -99,7 +99,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/data/raw
-          key: dns-dataset-v2
+          key: dns-dataset-v3
 
       - name: Download model artifact
         uses: actions/download-artifact@v4
@@ -119,14 +119,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: session_cache/
-          key: session-cache-v2
+          key: session-cache-v3
 
       - name: Save dataset cache
         if: always()
         uses: actions/cache@v4
         with:
           path: data/raw
-          key: dns-dataset-v2
+          key: dns-dataset-v3
 
       - name: Upload session cache (for debugging)
         if: always()
