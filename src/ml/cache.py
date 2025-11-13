@@ -96,8 +96,9 @@ class Cache:
         self.session_counts = self.redis.get("session_counts")
 
     def map_sessions(self):
-        print("::notice::sessions counts exist:", self.redis.exists("session_counts"))
         self.load_session_counts()
+        if self.session_counts is None: # CI specific
+            self.session_counts = count_sessions()
         print("::notice:: session counts", self.session_counts)
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
         for collection_time in self.data_store.list_collection_times():
@@ -115,8 +116,6 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
-        if self.session_counts is None: # CI specific
-            self.session_counts = count_sessions()
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
