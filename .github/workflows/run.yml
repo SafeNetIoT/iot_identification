@@ -70,12 +70,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Restore dataset cache
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: dns-dataset-v5
+          restore-keys: dns-dataset-v5
+
       - name: Restore session cache
         uses: actions/cache@v4
         with:
           path: session_cache/
-          key: session-cache-${{ hashFiles('data/raw/**/*.pcap') }}
-          restore-keys: session-cache-
+          key: session-cache-v5
+          restore-keys: session-cache-v5
+
+      - name: Inspect session cache contents
+        run: |
+          echo "Contents of session_cache/:"
+          ls -R session_cache/ || echo "session_cache/ missing or empty"
+          echo "Disk usage:"
+          du -sh session_cache/ || true
 
       - name: Fetch DNS dataset
         run: |
@@ -85,7 +99,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/data/raw
-          key: dns-dataset-v1
+          key: dns-dataset-v5
 
       - name: Download model artifact
         uses: actions/download-artifact@v4
@@ -99,6 +113,20 @@ jobs:
         run: |
           echo "Using model files from $MODEL_PATH"
           pytest -s
+
+      - name: Save session cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: session_cache/
+          key: session-cache-v5
+
+      - name: Save dataset cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: dns-dataset-v5
 
       - name: Upload session cache (for debugging)
         if: always()
