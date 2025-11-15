@@ -9,8 +9,9 @@ from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
 from src.ml.cache import Cache
 import random
+from abc import ABC, abstractmethod
 
-class Manager:
+class Manager(ABC):
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
         self.architecture = settings.model_architectures[architecture_name]
         self.data_prep = DatasetPreparation()
@@ -136,6 +137,10 @@ class Manager:
             raise FileNotFoundError("Model has to be saved before it is loaded")
         self.model_arr = [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
         return self.model_arr
+    
+    @abstractmethod
+    def predict(self, pcap_file):
+        pass
 
 
 if __name__ == "__main__":

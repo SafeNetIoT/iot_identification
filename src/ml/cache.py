@@ -10,10 +10,14 @@ from src.ml.dataset_preparation import DatasetPreparation as prep
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
+import os
+from src.utils.file_utils import print_file_tree
+import os
+import joblib
+
 
 class Cache:
     def __init__(self):
-        # self.cache_path = Path(settings.session_cache_path)
         self.data_store = DataStoreFactory.create(settings.raw_data_directory)
         self.fast_extractor = FastExtractionPipeline()
         self.registry = self.fast_extractor.registry # maybe a method
@@ -22,46 +26,30 @@ class Cache:
         self.collection_times = settings.time_intervals
         self.redis = RedisCache()
         self.unseen_sessions = defaultdict(list)
+        self.local = os.getenv("GITHUB_ACTIONS", "").lower() != "true"
+        if not self.local:
+            self.session_counts_path = settings.session_cache_path / "session_counts.json"
+            self.unseen_path = settings.session_cache_path / "unseen.pkl"
 
     def save_unseen(self):
-        self.redis.set("unseen_sessions", self.unseen_sessions)
+        if self.local:
+            self.redis.set("unseen_sessions", self.unseen_sessions)
+        else:
+            print("::notice::saved unseen sessions to pickle")
+            joblib.dump(self.unseen_sessions, self.unseen_path)
 
     def load_unseen(self):
-        return self.redis.get("unseen_sessions")
-
-    def save_session(self, cache, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
-        for device, sessions in cache.items():
-            group = root.create_group(device)
-            for i, item in enumerate(sessions):
-                if isinstance(item, pd.DataFrame):
-                    group.create_dataset(f"session_{i:05d}", data=item.to_records(index=False))
-                elif isinstance(item, (str, Path)):
-                    group.create_dataset(f"session_{i:05d}", data=str(item))
-                else:
-                    raise TypeError(f"Unsupported item type {type(item)} in cache for {device}")
-
-    def load_sessions(self, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
-        sessions = {}
-        for device in root.group_keys():
-            device_group = root[device]
-            loaded = []
-            for ds in device_group.values():
-                if ds.dtype.names:
-                    loaded.append(pd.DataFrame(ds[:]))
-                else:
-                    val = ds[()]  # scalar read (not slicing)
-                    if isinstance(val, bytes):
-                        val = val.decode()
-                    loaded.append(Path(val))
-            sessions[device] = loaded
-        return sessions
+        if self.local:
+            unseen_sessions = self.redis.get("unseen_sessions")
+        else:
+            print("::notice::loaded unseen sessions from pickle")
+            unseen_sessions = joblib.load(self.unseen_path)
+        return unseen_sessions
 
     def cache_sessions(self):
+        print("::notice::num devices:", len(list(self.data_store.list_dirs())))
         for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
-            # print(device_name)
             time_to_session = defaultdict(list)
             session_id = 0
             for device_pcap in self.data_store.list_pcap_files(device_dir):
@@ -86,39 +74,28 @@ class Cache:
                 self.session_counts[device_name] = session_id
             self.data_store.save_time_to_session(device_name, time_to_session)
         self.save_session_counts()
-        # self.save_session(self.unseen_sessions, "unseen_sessions")
         self.save_unseen()
-        print("cache created")
 
     def save_session_counts(self):
-        self.redis.set("session_counts", self.session_counts)
-        # output_directory = self.cache_path / "session_counts.json"
-        # with open(output_directory, 'w') as file:
-        #     json.dump(self.session_counts, file, indent=2)
+        if self.local:
+            self.redis.set("session_counts", self.session_counts)
+        else:
+            print("::notice::saving session counts to a json file")
+            with open(self.session_counts_path, 'w') as file:
+                json.dump(self.session_counts, file, indent=2)
 
     def load_session_counts(self):
-        self.session_counts = self.redis.get("session_counts")
-        # output_directory = self.cache_path / "session_counts.json"
-        # if len(self.session_counts) != 0:
-        #     return self.session_counts
-        # with open(output_directory, 'r') as file:
-        #     self.session_counts = json.load(file)
-            
-    # def _save_time_to_session(self, device_name, time_to_session):
-    #     for collection_time in time_to_session:
-    #         collection_dir = self.cache_path / "collection_times" / str(collection_time)
-    #         collection_dir.mkdir(parents=True, exist_ok=True)
-    #         for session, session_id in time_to_session[collection_time]:
-    #             session_file = collection_dir / device_name / f"session_{session_id}.parquet"
-    #             session_file.parent.mkdir(parents=True, exist_ok=True)
-    #             session.to_parquet(session_file, index=False)
+        if self.local:
+            self.session_counts = self.redis.get("session_counts")
+        else:
+            print("::notice::loading session counts from json file")
+            with open(self.session_counts_path, 'r') as file:
+                self.session_counts = json.load(file)
 
     def map_sessions(self):
         self.load_session_counts()
-
+        print("::notice:: session counts", self.session_counts)
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
-        # seen_cache_dir = self.cache_path / "collection_times"
-        # for collection_time in seen_cache_dir.iterdir():
         for collection_time in self.data_store.list_collection_times():
             for device_dir in collection_time.iterdir():
                 device_name = device_dir.name
@@ -134,8 +111,8 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
+        # print_file_tree()
         self.map_sessions()
-        # self.unseen_sessions = self.load_sessions("unseen_sessions")
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
 
@@ -144,7 +121,7 @@ class TimeBasedCache(Cache):
         super().__init__()
 
     def map_sessions(self):
-        time_collection_cache = self.cache_path / "collection_times"
+        time_collection_cache = self.cache_path / "collection_times" # error 
         session_map = defaultdict(lambda: defaultdict(list))
         session_ptr = defaultdict(dict) # device_name: session_id: index
         collection_dirs = sorted(time_collection_cache.iterdir(), key=lambda p: int(p.name))
@@ -157,7 +134,7 @@ class TimeBasedCache(Cache):
                 session_map[collection_time] = defaultdict(list)
             for device_dir in collection_time_dir.iterdir():
                 device_name = device_dir.name
-                for session_file in device_dir.iterdir():
+                for session_file in device_dir.iterdir(): 
                     session_id = int(session_file.stem.split("_")[1])
                     session_df = pd.read_parquet(str(session_file))
                     if session_id not in session_ptr:
@@ -170,9 +147,14 @@ class TimeBasedCache(Cache):
         return session_map
 
     def build(self):
-        if not self.cache_path.exists() or not any(self.cache_path.iterdir()):
+        if not self.data_store.cache_exists():
             self.cache_sessions()
         session_map = self.map_sessions()
         # unseen_session = self.load_sessions("unseen_sessions")
         unseen_sessions = self.load_unseen()
         return session_map, unseen_sessions
+
+if __name__ == "__main__":
+    cache = Cache()
+    cache.cache_sessions()
+    print(cache.session_counts)

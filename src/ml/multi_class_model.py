@@ -19,7 +19,7 @@ class MultiClassModel(Manager):
         self.train_all()
         self.save_all(save_input_data=True)
 
-    def multi_predict(self, pcap_file):
+    def predict(self, pcap_file):
         self.load_model()
         model = self.model_arr[0]
         df = self.fast_extractor.extract_features(pcap_file)
@@ -39,7 +39,7 @@ def main(): # still shows incorrect results
     # manager.run()
 
     manager = MultiClassModel(loading_dir="models/2025-10-25/multiclass_model5/")
-    res = manager.multi_predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
+    res = manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
     print("res:", res)
 
 if __name__ == "__main__":

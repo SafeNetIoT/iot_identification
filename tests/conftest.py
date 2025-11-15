@@ -3,7 +3,8 @@ from unittest.mock import MagicMock, patch
 from src.ml.binary_model import BinaryModel
 from src.ml.multi_class_model import MultiClassModel
 from sklearn.ensemble import RandomForestClassifier
-from config import settings
+from config import settings, PROJECT_ROOT
+import os
 
 @pytest.fixture
 def fake_device_sessions():
@@ -35,7 +36,11 @@ def binary_model():
 @pytest.fixture
 def binary_model_under_test():
     """Creates a binary model instance with a loaded model specified in config"""
-    model = BinaryModel(loading_dir=settings.model_under_test)
+    if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
+        model_dir = PROJECT_ROOT / "artifacts"
+    else:
+        model_dir = settings.model_under_test
+    model = BinaryModel(loading_dir=model_dir)
     model.set_cache()
     return model
 
