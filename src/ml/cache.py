@@ -27,22 +27,21 @@ class Cache:
         self.local = os.getenv("GITHUB_ACTIONS", "").lower() != "true"
         if not self.local:
             self.session_counts_path = settings.session_cache_path / "session_counts.json"
-            self.unseen_path = settings.session_cache_path / "unseen_sessions.json"
+            self.unseen_path = settings.session_cache_path / "unseen.pkl"
 
     def save_unseen(self):
         if self.local:
             self.redis.set("unseen_sessions", self.unseen_sessions)
         else:
             print("::notice::saved unseen sessions to pickle")
-            unseen_cache_path = self.data_store.cache_path / "unseen.pkl"
-            joblib.dump(self.unseen_sessions, unseen_cache_path)
+            joblib.dump(self.unseen_sessions, self.unseen_path)
 
     def load_unseen(self):
         if self.local:
             unseen_sessions = self.redis.get("unseen_sessions")
         else:
-            with open(self.unseen_path, 'r') as file:
-                unseen_sessions = json.load(file)
+            print("::notice::loaded unseen sessions from pickle")
+            joblib.load(self.unseen_path)
         return unseen_sessions
 
     def cache_sessions(self):
