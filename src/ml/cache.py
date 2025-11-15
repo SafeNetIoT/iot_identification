@@ -12,6 +12,7 @@ from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
 from src.utils.file_utils import print_file_tree
 import os
+import joblib
 
 class Cache:
     def __init__(self):
@@ -32,9 +33,9 @@ class Cache:
         if self.local:
             self.redis.set("unseen_sessions", self.unseen_sessions)
         else:
-            print("::notice::saved unseen sessions to json")
-            with open(self.unseen_path, 'w') as file:
-                json.dump(self.unseen_sessions, file, indent=2)
+            print("::notice::saved unseen sessions to pickle")
+            unseen_cache_path = self.data_store.cache_path / "unseen.pkl"
+            joblib.dump(self.unseen_sessions, unseen_cache_path)
 
     def load_unseen(self):
         if self.local:
