@@ -41,7 +41,7 @@ class Cache:
             unseen_sessions = self.redis.get("unseen_sessions")
         else:
             print("::notice::loaded unseen sessions from pickle")
-            joblib.load(self.unseen_path)
+            unseen_sessions = joblib.load(self.unseen_path)
         return unseen_sessions
 
     def cache_sessions(self):
