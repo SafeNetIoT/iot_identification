@@ -12,6 +12,8 @@ from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
 import os
 from src.utils.file_utils import print_file_tree
+import os
+import joblib
 
 
 class Cache:
@@ -27,52 +29,22 @@ class Cache:
         self.local = os.getenv("GITHUB_ACTIONS", "").lower() != "true"
         if not self.local:
             self.session_counts_path = settings.session_cache_path / "session_counts.json"
-            self.unseen_path = settings.session_cache_path / "unseen_sessions.json"
+            self.unseen_path = settings.session_cache_path / "unseen.pkl"
 
     def save_unseen(self):
         if self.local:
             self.redis.set("unseen_sessions", self.unseen_sessions)
         else:
-            print("::notice::saved unseen sessions to json")
-            with open(self.unseen_path, 'w') as file:
-                json.dump(self.unseen_sessions, file, indent=2)
+            print("::notice::saved unseen sessions to pickle")
+            joblib.dump(self.unseen_sessions, self.unseen_path)
 
     def load_unseen(self):
         if self.local:
             unseen_sessions = self.redis.get("unseen_sessions")
         else:
-            with open(self.unseen_path, 'r') as file:
-                unseen_sessions = json.load(file)
+            print("::notice::loaded unseen sessions from pickle")
+            unseen_sessions = joblib.load(self.unseen_path)
         return unseen_sessions
-
-    def save_session(self, cache, cache_name):
-        root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="w")
-        for device, sessions in cache.items():
-            group = root.create_group(device)
-            for i, item in enumerate(sessions):
-                if isinstance(item, pd.DataFrame):
-                    group.create_dataset(f"session_{i:05d}", data=item.to_records(index=False))
-                elif isinstance(item, (str, Path)):
-                    group.create_dataset(f"session_{i:05d}", data=str(item))
-                else:
-                    raise TypeError(f"Unsupported item type {type(item)} in cache for {device}")
-
-    # def load_sessions(self, cache_name):
-    #     root = zarr.open(self.cache_path / f"{cache_name}.zarr", mode="r")
-    #     sessions = {}
-    #     for device in root.group_keys():
-    #         device_group = root[device]
-    #         loaded = []
-    #         for ds in device_group.values():
-    #             if ds.dtype.names:
-    #                 loaded.append(pd.DataFrame(ds[:]))
-    #             else:
-    #                 val = ds[()]  # scalar read (not slicing)
-    #                 if isinstance(val, bytes):
-    #                     val = val.decode()
-    #                 loaded.append(Path(val))
-    #         sessions[device] = loaded
-    #     return sessions
 
     def cache_sessions(self):
         print("::notice::num devices:", len(list(self.data_store.list_dirs())))
@@ -149,7 +121,7 @@ class TimeBasedCache(Cache):
         super().__init__()
 
     def map_sessions(self):
-        time_collection_cache = self.cache_path / "collection_times"
+        time_collection_cache = self.cache_path / "collection_times" # error 
         session_map = defaultdict(lambda: defaultdict(list))
         session_ptr = defaultdict(dict) # device_name: session_id: index
         collection_dirs = sorted(time_collection_cache.iterdir(), key=lambda p: int(p.name))
@@ -162,7 +134,7 @@ class TimeBasedCache(Cache):
                 session_map[collection_time] = defaultdict(list)
             for device_dir in collection_time_dir.iterdir():
                 device_name = device_dir.name
-                for session_file in device_dir.iterdir():
+                for session_file in device_dir.iterdir(): 
                     session_id = int(session_file.stem.split("_")[1])
                     session_df = pd.read_parquet(str(session_file))
                     if session_id not in session_ptr:
