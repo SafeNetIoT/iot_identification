@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  dev:
+    build: .
+    image: iot-identification:latest
+    container_name: iot-identification-dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PROJECT_ROOT=/app
+    command: bash

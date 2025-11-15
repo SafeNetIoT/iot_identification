@@ -1,0 +1,16 @@
+{
+  "name": "IoT Identification Dev",
+  "dockerFile": "../Dockerfile",
+  "context": "..",
+  "workspaceFolder": "/app",
+  "postCreateCommand": "bash scripts/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  }
+}
+
