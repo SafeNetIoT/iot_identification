@@ -10,9 +10,11 @@ from src.ml.dataset_preparation import DatasetPreparation as prep
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
+import os
 from src.utils.file_utils import print_file_tree
 import os
 import joblib
+
 
 class Cache:
     def __init__(self):
@@ -45,6 +47,7 @@ class Cache:
         return unseen_sessions
 
     def cache_sessions(self):
+        print("::notice::num devices:", len(list(self.data_store.list_dirs())))
         for device_dir in self.data_store.list_dirs():
             device_name = str(device_dir.name)
             time_to_session = defaultdict(list)
@@ -91,6 +94,7 @@ class Cache:
 
     def map_sessions(self):
         self.load_session_counts()
+        print("::notice:: session counts", self.session_counts)
         self.device_sessions = {device_name:[None]*self.session_counts[device_name] for device_name in self.session_counts}
         for collection_time in self.data_store.list_collection_times():
             for device_dir in collection_time.iterdir():
@@ -107,6 +111,7 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
+        # print_file_tree()
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
@@ -148,3 +153,8 @@ class TimeBasedCache(Cache):
         # unseen_session = self.load_sessions("unseen_sessions")
         unseen_sessions = self.load_unseen()
         return session_map, unseen_sessions
+
+if __name__ == "__main__":
+    cache = Cache()
+    cache.cache_sessions()
+    print(cache.session_counts)
