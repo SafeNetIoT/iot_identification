@@ -80,8 +80,8 @@ jobs:
         env:
           MODEL_PATH: ./artifacts
         run: |
-          echo "Starting Docker Compose stack..."
-          docker compose up --build --abort-on-container-exit
+          echo "Starting Docker Compose test service..."
+          docker compose up --build --abort-on-container-exit test
           docker compose down
 
       - name: Upload session cache (optional)
