@@ -5,9 +5,25 @@ services:
     build: .
     image: iot-identification:latest
     container_name: iot-identification-dev
+    depends_on:
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
     working_dir: /app
     environment:
       - PROJECT_ROOT=/app
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     command: bash
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

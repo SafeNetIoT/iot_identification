@@ -29,7 +29,7 @@ cd iot_identification
 
 ### Start the dev environment
 ```bash
-docker compose run dev
+docker compose up --build
 ```
 ➡ Runs the same container used in production and CI.  
 Your code is mounted into `/app`, so changes persist.
