@@ -41,20 +41,3 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-
-  test:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    depends_on:
-      - redis
-      - setup
-    volumes:
-      - .:/app
-    environment:
-      - MODEL_PATH=/app/artifacts
-    command: >
-      bash -c "
-        echo 'Running pytest...' &&
-        pytest -s -v --maxfail=1 --disable-warnings
-      "
