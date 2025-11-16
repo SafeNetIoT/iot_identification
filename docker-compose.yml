@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   dev:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
     image: iot-identification:latest
     container_name: iot-identification-dev
     depends_on:
