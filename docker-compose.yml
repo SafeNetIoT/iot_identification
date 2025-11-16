@@ -1,6 +1,18 @@
 version: "3.9"
 
 services:
+  setup:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: bash -c "
+      apt-get update && apt-get install -y git &&
+      git clone --depth 1 https://github.com/SafeNetIoT/doh_iot.git /app/data/tmp_repo &&
+      mkdir -p /app/data/raw &&
+      cp -r /app/data/tmp_repo/data/dns_only/* /app/data/raw/ &&
+      rm -rf /app/data/tmp_repo &&
+      "
   dev:
     build: 
       context: .

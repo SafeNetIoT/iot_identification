@@ -16,11 +16,11 @@ RUN pip install -e .
 # Set environment variable for project root
 ENV PROJECT_ROOT=/app
 
-# Make shell scripts executable
-RUN chmod +x ./scripts/setup.sh ./scripts/train_model.sh ./scripts/setup_hooks.sh ./scripts/raw_data.sh
+# # Make shell scripts executable
+# RUN chmod +x ./scripts/setup.sh ./scripts/train_model.sh ./scripts/setup_hooks.sh ./scripts/raw_data.sh
 
-# Run setup script to prepare data and directories
-RUN ./scripts/setup.sh
+# # # Run setup script to prepare data and directories
+# # RUN ./scripts/setup.sh
 
 # Default command (training script)
 CMD ["bash", "./scripts/train_model.sh"]
