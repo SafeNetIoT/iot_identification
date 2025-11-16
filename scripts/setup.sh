@@ -8,5 +8,5 @@ echo "Setting up Python environment..."
 cd "$(dirname "$0")/.." || exit 1
 
 # set up git hooks
-./scripts/setup-hooks.sh
+./scripts/setup_hooks.sh
 ./scripts/raw_data.sh
