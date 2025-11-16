@@ -11,7 +11,7 @@ services:
       git clone --depth 1 https://github.com/SafeNetIoT/doh_iot.git /app/data/tmp_repo &&
       mkdir -p /app/data/raw &&
       cp -r /app/data/tmp_repo/data/dns_only/* /app/data/raw/ &&
-      rm -rf /app/data/tmp_repo &&
+      rm -rf /app/data/tmp_repo
       "
   dev:
     build: 
