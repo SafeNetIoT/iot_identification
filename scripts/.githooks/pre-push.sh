@@ -25,7 +25,7 @@ echo "Created archive: $ARCHIVE"
 
 # Ensure the GitHub release 'latest' exists
 if ! gh release view latest &>/dev/null; then
-  echo "🚀 Creating 'latest' release..."
+  echo "Creating 'latest' release..."
   gh release create latest --title "Latest Model" --notes "Auto-uploaded model for CI"
 fi
 

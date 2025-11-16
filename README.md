@@ -17,34 +17,29 @@ The first proposal is multi class random forest classifier, whereas the second i
 
 ## Installation
 
-### 1. Create a virtual environment  
-**MacOS / Linux**:
+### Prerequisites
+- **Docker** and **Docker Compose**
+- (Optional) **VS Code + Dev Containers** extension
+
+### Clone the repo
 ```bash
-python -m venv venv
-source venv/bin/activate
+git clone https://github.com/SafeNetIoT/iot_identification.git
+cd iot_identification
 ```
 
-**Windows**:
+### Start the dev environment
 ```bash
-python -m venv venv
-venv\Scripts\activate
+docker compose up --build
 ```
+➡ Runs the same container used in production and CI.  
+Your code is mounted into `/app`, so changes persist.
 
-### 2. Install the requirements  
-```bash
-pip install -r requirements.txt
-```
+### VS Code Users
+Using VS Code Dev Containers gives you a fully pre-configured, reproducible development environment — with automatic Python setup, debugging, and dependency management — without installing anything locally.\
 
-### 3. Install the project in editable mode  
-```bash
-pip install -e .
-```
-
-### 4. Run the model with the default features  
-```bash
-python -m src.identification.feature_extraction.py
-python -m src.identification.binary_model.py
-```
+1. Install the **Dev Containers** extension.  
+2. Open the repo in VS Code.  
+3. Click **“Reopen in Container”**.  
 
 ---
 

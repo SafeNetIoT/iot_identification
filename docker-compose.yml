@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  setup:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: bash -c "
+      apt-get update && apt-get install -y git &&
+      git clone --depth 1 https://github.com/SafeNetIoT/doh_iot.git /app/data/tmp_repo &&
+      mkdir -p /app/data/raw &&
+      cp -r /app/data/tmp_repo/data/dns_only/* /app/data/raw/ &&
+      rm -rf /app/data/tmp_repo
+      "
+  dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    image: iot-identification:latest
+    container_name: iot-identification-dev
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - PROJECT_ROOT=/app
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: bash
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
