@@ -62,7 +62,6 @@ class Settings(BaseSettings):
     random_state: int = 42
     unseen_fraction: float = 0.1
     testing: TestingConfig = TestingConfig(fast_mode=1, sample_fraction=0.1)
-    model_under_test: Path = PROJECT_ROOT / "models" / "2025-10-25"/ "binary_model1"
     multiclass_model_under_test: Path = PROJECT_ROOT / "models" / "2025-10-25" / "multiclass_model5"
     desired_accuracy: float = 0.85
     mac_address_map_path: Path = PROJECT_ROOT / "mac_address_map.json"
@@ -70,5 +69,14 @@ class Settings(BaseSettings):
     # ftp_settings:FTPSettings = FTPSettings()
     default_store: str = "local"
     identification_threshold: float = 0.7
+    is_ci: bool = os.getenv("GITHUB_ACTIONS", "").lower() == "true"
+    if is_ci:
+        session_counts_path = session_cache_path / "session_counts.json"
+        unseen_path = session_cache_path / "unseen.pkl"
+        model_under_test = PROJECT_ROOT / "artifacts"
+    else:
+        session_counts_path = None
+        unseen_path = None
+        model_under_test: Path = PROJECT_ROOT / "models" / "2025-10-25"/ "binary_model1"
 
 settings = Settings()

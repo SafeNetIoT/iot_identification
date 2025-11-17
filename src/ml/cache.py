@@ -26,10 +26,9 @@ class Cache:
         self.collection_times = settings.time_intervals
         self.redis = RedisCache()
         self.unseen_sessions = defaultdict(list)
-        self.local = os.getenv("GITHUB_ACTIONS", "").lower() != "true"
-        if not self.local:
-            self.session_counts_path = settings.session_cache_path / "session_counts.json"
-            self.unseen_path = settings.session_cache_path / "unseen.pkl"
+        self.local = not settings.is_ci
+        self.session_counts_path = settings.session_counts_path
+        self.unseen_path = settings.unseen_path
 
     def save_unseen(self):
         if self.local:
