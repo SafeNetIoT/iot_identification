@@ -82,6 +82,9 @@ class FastExtractionPipeline:
         self.time_interval = time_interval
         self.registry = SessionRegistry()
 
+    def get_registry(self):
+        return self.registry
+
     def extract_features(self, input_data):
         manager = FlowManager(extractor = FastFeatureExtractor, registry=self.registry)
         rows = []

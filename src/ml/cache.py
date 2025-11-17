@@ -20,7 +20,7 @@ class Cache:
     def __init__(self):
         self.data_store = DataStoreFactory.create(settings.raw_data_directory)
         self.fast_extractor = FastExtractionPipeline()
-        self.registry = self.fast_extractor.registry # maybe a method
+        self.registry = self.fast_extractor.get_registry()
         self.session_counts = Counter()
         self.unseen_fraction = settings.unseen_fraction
         self.collection_times = settings.time_intervals

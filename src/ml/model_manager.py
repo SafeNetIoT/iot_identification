@@ -142,11 +142,6 @@ class Manager(ABC):
     def predict(self, pcap_file):
         pass
 
-
-if __name__ == "__main__":
-    manager = Manager()
-    # manager.set_cache()
-    print(manager.architecture)
         
 
 

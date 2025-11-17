@@ -30,14 +30,10 @@ class MultiClassModel(Manager):
         mean_proba = probas.mean(axis=0)
         best_idx = mean_proba.argmax()
         predicted_class = model.model.classes_[best_idx]
-        # confidence = mean_proba[best_idx]
         return predicted_class
 
 
-def main(): # still shows incorrect results
-    # manager = MultiClassModel()
-    # manager.run()
-
+def main(): 
     manager = MultiClassModel(loading_dir="models/2025-10-25/multiclass_model5/")
     res = manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:02:55.402s.pcap")
     print("res:", res)
