@@ -56,8 +56,10 @@ class LocalStore(DataStore):
                 session_file.parent.mkdir(parents=True, exist_ok=True)
                 session.to_parquet(session_file, index=False)
 
-    def list_collection_times(self):
+    def list_collection_times(self, sorted_times = False):
         collection_dirs = self.cache_path / "collection_times"
+        if sorted_times:
+            return sorted(collection_dirs.iterdir(), key=lambda p: int(p.name))
         return collection_dirs.iterdir()
     
     def cache_exists(self):

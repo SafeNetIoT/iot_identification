@@ -120,10 +120,9 @@ class TimeBasedCache(Cache):
         super().__init__()
 
     def map_sessions(self):
-        time_collection_cache = self.cache_path / "collection_times" # error 
         session_map = defaultdict(lambda: defaultdict(list))
         session_ptr = defaultdict(dict) # device_name: session_id: index
-        collection_dirs = sorted(time_collection_cache.iterdir(), key=lambda p: int(p.name))
+        collection_dirs = self.data_store.list_collection_times(sorted_times=True)
         for i, collection_time_dir in enumerate(collection_dirs):
             collection_time = int(collection_time_dir.name)
             if i > 0:
