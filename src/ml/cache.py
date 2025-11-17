@@ -111,7 +111,6 @@ class Cache:
     def build(self):
         if not self.data_store.cache_exists():
             self.cache_sessions()
-        # print_file_tree()
         self.map_sessions()
         self.unseen_sessions = self.load_unseen()
         return self.device_sessions, self.unseen_sessions
@@ -147,14 +146,4 @@ class TimeBasedCache(Cache):
         return session_map
 
     def build(self):
-        if not self.data_store.cache_exists():
-            self.cache_sessions()
-        session_map = self.map_sessions()
-        # unseen_session = self.load_sessions("unseen_sessions")
-        unseen_sessions = self.load_unseen()
-        return session_map, unseen_sessions
-
-if __name__ == "__main__":
-    cache = Cache()
-    cache.cache_sessions()
-    print(cache.session_counts)
+        super().build()
