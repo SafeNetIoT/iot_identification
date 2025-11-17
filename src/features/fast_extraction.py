@@ -82,7 +82,8 @@ class FastExtractionPipeline:
         self.time_interval = time_interval
         self.registry = SessionRegistry()
 
-    def get_registry(self):
+    @property
+    def registry(self):
         return self.registry
 
     def extract_features(self, input_data):
