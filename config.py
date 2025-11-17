@@ -71,12 +71,12 @@ class Settings(BaseSettings):
     identification_threshold: float = 0.7
     is_ci: bool = os.getenv("GITHUB_ACTIONS", "").lower() == "true"
     if is_ci:
-        session_counts_path = session_cache_path / "session_counts.json"
-        unseen_path = session_cache_path / "unseen.pkl"
-        model_under_test = PROJECT_ROOT / "artifacts"
+        session_counts_path: Path = session_cache_path / "session_counts.json"
+        unseen_path: Path = session_cache_path / "unseen.pkl"
+        model_under_test: Path = PROJECT_ROOT / "artifacts"
     else:
-        session_counts_path = None
-        unseen_path = None
+        session_counts_path: Optional[Path] = None
+        unseen_path: Optional[Path] = None
         model_under_test: Path = PROJECT_ROOT / "models" / "2025-10-25"/ "binary_model1"
 
 settings = Settings()

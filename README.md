@@ -31,7 +31,7 @@ cd iot_identification
 ```bash
 docker compose up --build
 ```
-➡ Runs the same container used in production and CI.  
+Runs the same container used in production and CI.  
 Your code is mounted into `/app`, so changes persist.
 
 ### VS Code Users
