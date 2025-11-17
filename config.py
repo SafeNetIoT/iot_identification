@@ -74,6 +74,7 @@ class Settings(BaseSettings):
         session_counts_path: Path = session_cache_path / "session_counts.json"
         unseen_path: Path = session_cache_path / "unseen.pkl"
         model_under_test: Path = PROJECT_ROOT / "artifacts"
+        granular_test_results_path: Path = session_cache_path / "granular_test_results.json"
     else:
         session_counts_path: Optional[Path] = None
         unseen_path: Optional[Path] = None

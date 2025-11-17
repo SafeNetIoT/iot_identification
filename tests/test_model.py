@@ -74,7 +74,7 @@ def test_slow_pipeline(binary_model, tmp_path):
 
 @pytest.mark.integration
 def test_unseen(binary_model_under_test):
-    _run_unseen_evaluation(binary_model_under_test, binary_model_under_test.predict)
+    _run_unseen_evaluation(binary_model_under_test)
 
 def test_add_device_missing_directory(binary_model):
     with patch("src.ml.binary_model.Path.exists", return_value=False):
@@ -84,5 +84,5 @@ def test_add_device_missing_directory(binary_model):
 @pytest.mark.integration
 @pytest.mark.skipif(settings.is_ci, reason="Skip on CI")
 def test_unseen_multiclass(multiclass_model_under_test):
-    _run_unseen_evaluation(multiclass_model_under_test, multiclass_model_under_test.predict)
+    _run_unseen_evaluation(multiclass_model_under_test)
             

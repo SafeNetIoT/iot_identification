@@ -51,9 +51,8 @@ def count_input_conversations(pcap_path: str) -> int:
     csv_path = pcap_path.replace(".pcap", ".csv")
     return len(pd.read_csv(csv_path))
 
-def _run_unseen_evaluation(model, predict_func):
-    unseen_data = model.unseen_sessions
-    acc = evaluate_on_fixed_unseen(unseen_dataset=unseen_data, predict_func=predict_func)
+def _run_unseen_evaluation(model):
+    acc = evaluate_on_fixed_unseen(model=model)
     assert acc >= settings.desired_accuracy, "Accuracy lower than desired"
 
 def get_mac_address_map():

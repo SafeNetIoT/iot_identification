@@ -42,6 +42,9 @@ class Manager(ABC):
         self.records = []
         self.model_arr = []
         return
+    
+    def get_redis(self):
+        return self.cache.redis
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
