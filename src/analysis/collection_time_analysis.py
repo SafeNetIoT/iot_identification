@@ -44,7 +44,6 @@ class TestPipeline:
         return pd.DataFrame(results, columns=["time", "accuracy"])
 
 def main():
-    import json
     pipeline = TestPipeline()
     # pipeline.run_intervals()
     print(pipeline.run_time_learning_curve())
