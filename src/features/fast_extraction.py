@@ -80,11 +80,11 @@ class FastFeatureExtractor:
 class FastExtractionPipeline:
     def __init__(self, time_interval: Optional[float] = None) -> None:
         self.time_interval = time_interval
-        self.registry = SessionRegistry()
+        self._registry = SessionRegistry()
 
     @property
     def registry(self):
-        return self.registry
+        return self._registry
 
     def extract_features(self, input_data):
         manager = FlowManager(extractor = FastFeatureExtractor, registry=self.registry)
