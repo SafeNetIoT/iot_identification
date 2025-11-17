@@ -7,7 +7,7 @@ from datetime import datetime
 import joblib
 from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
-from src.ml.cache import Cache
+from src.services.cache import Cache
 import random
 from abc import ABC, abstractmethod
 

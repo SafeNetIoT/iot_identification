@@ -1,6 +1,6 @@
 from config import settings
 import pandas as pd
-from src.ml.cache import TimeBasedCache
+from src.services.cache import TimeBasedCache
 from src.ml.binary_model import BinaryModel
 from src.utils.evaluation import evaluate_on_fixed_unseen
 
