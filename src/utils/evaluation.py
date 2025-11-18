@@ -2,7 +2,7 @@ import json
 import random
 from typing import Dict, Tuple
 from config import settings
-from src.utils.exceptions import EmptyDataError
+from pandas.errors import EmptyDataError
 
 def compute_unseen_accuracy(
     model,
