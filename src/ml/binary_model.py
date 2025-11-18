@@ -48,7 +48,6 @@ class BinaryModel(Manager):
         self.save_all()
 
     def add_device(self, device_name, device_directory, verbose=False):
-        # WIP needs to be modified
         device_path = Path(device_directory)
         if not device_path.exists():
             raise FileNotFoundError(f"Device directory not found: {device_path}")
