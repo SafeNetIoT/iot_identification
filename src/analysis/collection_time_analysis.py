@@ -8,10 +8,8 @@ class TestPipeline:
     def __init__(self, verbose=True) -> None:
         self.collection_times = settings.time_intervals
         self.verbose = verbose
-        self.cache = TimeBasedCache()
-        self.time_datasets, self.unseen_sessions = self.cache.build()
         self.manager = BinaryModel()
-        self.manager.unseen_sessions = self.unseen_sessions
+        self.time_datasets, self.unseen_sessions = self.manager.set_cache(cache=TimeBasedCache())
 
     def run_intervals(self):
         for dataset in self.time_datasets.values():
