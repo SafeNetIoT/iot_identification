@@ -11,6 +11,7 @@ class TestPipeline:
         self.cache = TimeBasedCache()
         self.time_datasets, self.unseen_sessions = self.cache.build()
         self.manager = BinaryModel()
+        self.manager.unseen_sessions = self.unseen_sessions
 
     def run_intervals(self):
         for dataset in self.time_datasets.values():
@@ -35,7 +36,7 @@ class TestPipeline:
             try:
                 self.manager.train_all()
                 print("num models:", len(self.manager.model_arr))
-                acc = evaluate_on_fixed_unseen(self.unseen_sessions, self.manager.predict)
+                acc = evaluate_on_fixed_unseen(self.manager)
                 results.append((collection_time, acc))
             except ValueError:
                 print(f"Skipping {collection_time}: not enough data")

@@ -1,7 +1,6 @@
 import yaml
 from config import settings
 import os
-from collections import defaultdict, Counter
 
 def unpack_feature_groups():
     with open(settings.feature_menu_path, "r") as f:
