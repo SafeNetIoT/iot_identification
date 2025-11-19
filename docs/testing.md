@@ -36,3 +36,11 @@ Integration test for the fast extraction pipeline.
 Unit test for ```add_device()``` verifying that it extracts features, labels sessions, samples false classes, and trains/saves one classifier per device.
 
 ---
+
+## Continuous Integration
+A GitHub Actions workflow runs a subset of the most critical integration tests, with less essential or time-consuming tests skipped via decorators.
+
+Currently, the workflow does not use the Docker image during testing. Running tests inside the image would require treating tests as a service during image builds, which isn’t practical — tests take roughly 40–50 minutes, and it would make little sense to rerun them each time a contributor builds an image locally.
+
+This setup reflects a deliberate trade-off: favoring simplicity and speed over an exact match with the containerized environment. Still, integrating full Docker-based testing remains a valuable direction for future improvements.
+---

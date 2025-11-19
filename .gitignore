@@ -8,3 +8,4 @@ models/
 /extracted_features
 /session_cache*
 .env
+.DS_Store

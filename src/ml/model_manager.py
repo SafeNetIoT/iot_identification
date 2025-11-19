@@ -7,7 +7,7 @@ from datetime import datetime
 import joblib
 from src.ml.model_record import ModelRecord
 from src.features.fast_extraction import FastExtractionPipeline
-from src.ml.cache import Cache
+from src.services.cache import Cache
 import random
 from abc import ABC, abstractmethod
 
@@ -42,6 +42,9 @@ class Manager(ABC):
         self.records = []
         self.model_arr = []
         return
+    
+    def get_redis(self):
+        return self.cache.redis
 
     def train_classifier(self, record, show_curve = False):
         clf = BaseModel(self.architecture, record.data, record.name)
@@ -142,11 +145,6 @@ class Manager(ABC):
     def predict(self, pcap_file):
         pass
 
-
-if __name__ == "__main__":
-    manager = Manager()
-    # manager.set_cache()
-    print(manager.architecture)
         
 
 

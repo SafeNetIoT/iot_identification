@@ -1,6 +1,6 @@
 from config import settings
 import pandas as pd
-from src.ml.cache import TimeBasedCache
+from src.services.cache import TimeBasedCache
 from src.ml.binary_model import BinaryModel
 from src.utils.evaluation import evaluate_on_fixed_unseen
 
@@ -8,9 +8,8 @@ class TestPipeline:
     def __init__(self, verbose=True) -> None:
         self.collection_times = settings.time_intervals
         self.verbose = verbose
-        self.cache = TimeBasedCache()
-        self.time_datasets, self.unseen_sessions = self.cache.build()
         self.manager = BinaryModel()
+        self.time_datasets, self.unseen_sessions = self.manager.set_cache(cache=TimeBasedCache())
 
     def run_intervals(self):
         for dataset in self.time_datasets.values():
@@ -35,7 +34,7 @@ class TestPipeline:
             try:
                 self.manager.train_all()
                 print("num models:", len(self.manager.model_arr))
-                acc = evaluate_on_fixed_unseen(self.unseen_sessions, self.manager.predict)
+                acc = evaluate_on_fixed_unseen(self.manager)
                 results.append((collection_time, acc))
             except ValueError:
                 print(f"Skipping {collection_time}: not enough data")
@@ -44,7 +43,6 @@ class TestPipeline:
         return pd.DataFrame(results, columns=["time", "accuracy"])
 
 def main():
-    import json
     pipeline = TestPipeline()
     # pipeline.run_intervals()
     print(pipeline.run_time_learning_curve())
