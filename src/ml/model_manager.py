@@ -16,13 +16,16 @@ class Manager(ABC):
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
         self.architecture = settings.model_architectures[architecture_name]
         self.records: List[ModelRecord] = []
-        self.random_state = settings.random_state          
-        self.output_directory = output_directory if output_directory is not None else settings.models_directory
+        self.random_state = settings.random_state
+        if output_directory is not None:
+            self.output_directory = self.model_directory = output_directory
+        else:
+            self.model_directory = None
+            self.output_directory = settings.models_directory
         self.loading_directory = loading_directory
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
         self.fast_extractor = FastExtractionPipeline()
-        self.model_directory = None
         random.seed(self.random_state)
         self.cache = Cache()
         self.model_arr = []

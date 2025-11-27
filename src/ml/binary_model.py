@@ -92,14 +92,11 @@ class BinaryModel(Manager):
 
 def main():
     # manager = BinaryModel()
-    # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
+    # manager.slow_train()
 
-    manager = BinaryModel()
-    manager.slow_train()
-
-    # manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
-    # manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")
-
+    manager = BinaryModel(output_directory="models/2025-11-27/binary_model", loading_dir="models/2025-11-27/binary_model")
+    manager.set_cache()
+    manager.add_device("alexa_swan_kettle3", "data/raw/alexa_swan_kettle/")
 
 if __name__ == "__main__":
     main()
