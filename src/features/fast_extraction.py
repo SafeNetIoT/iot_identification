@@ -1,12 +1,11 @@
 from dataclasses import dataclass, asdict
 from src.features.feature_extraction import FlowManager
 from typing import Optional
-from scapy.all import PcapReader
 import pandas as pd
 from config import settings
 import os
 from pathlib import Path
-from src.ml.dataset_preparation import DatasetPreparation as Prep
+from src.utils.file_utils import label_device
 from src.features.session_registry import SessionRegistry
 from src.features.pcap_reader_factory import PcapReaderFactory
 
@@ -122,7 +121,7 @@ def main():
             device_df = extractor.extract_features(str(pcap_path))
             device_dfs.append(device_df)
         complete_device = pd.concat(device_dfs, ignore_index=True)
-        complete_device = Prep.label_device(complete_device, device)
+        complete_device = label_device(complete_device, device)
         complete_device.to_csv(f"{settings.fast_extraction_directory}/{device}.csv", index=False)
 
 if __name__ == "__main__":

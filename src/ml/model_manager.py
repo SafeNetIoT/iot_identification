@@ -1,7 +1,6 @@
 import os
 from src.ml.base_model import BaseModel
 from config import settings
-from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
 import joblib
@@ -16,7 +15,6 @@ from typing import Union, List
 class Manager(ABC):
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
         self.architecture = settings.model_architectures[architecture_name]
-        self.data_prep = DatasetPreparation()
         self.records: List[ModelRecord] = []
         self.random_state = settings.random_state          
         self.output_directory = output_directory if output_directory is not None else settings.models_directory

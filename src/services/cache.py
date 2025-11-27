@@ -5,6 +5,7 @@ from collections import defaultdict, Counter
 import json
 from src.features.fast_extraction import FastExtractionPipeline
 from src.ml.dataset_preparation import DatasetPreparation as prep
+from src.utils.file_utils import label_device, clean_up
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
@@ -64,7 +65,8 @@ class Cache:
             self.unseen_sessions[device_name].append(device_pcap)
             return session_id
 
-        labeled_df = prep.label_device(unlabeled_device_df, 0)
+        labeled_df = label_device(unlabeled_device_df, 0)
+        clean_up(labeled_df)
         time_arr = self.registry.get_metadata()
         self._split_by_collection_time(labeled_df, time_arr, time_to_session, session_id)
         return session_id + 1
