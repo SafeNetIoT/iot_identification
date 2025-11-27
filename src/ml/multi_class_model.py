@@ -3,6 +3,7 @@ from src.ml.model_record import ModelRecord
 import pandas as pd
 from typing import Union, List
 from scapy.packet import Packet
+from src.utils.data_utils import label_device
 
 
 class MultiClassModel(Manager):
@@ -14,7 +15,7 @@ class MultiClassModel(Manager):
         self.device_sessions, self.unseen_sessions = self.set_cache()
         data = []
         for device_name, sessions in self.device_sessions.items():
-            sessions = [self.data_prep.label_device(session, device_name) for session in sessions]
+            sessions = [label_device(session, device_name) for session in sessions]
             data.extend(sessions)
         record = ModelRecord(name="multiclass_model", data=data)
         self.records.append(record)
