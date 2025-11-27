@@ -7,6 +7,7 @@ from pandas.errors import EmptyDataError
 from config import settings
 from typing import Union, List
 from scapy.packet import Packet
+from src.utils.data_utils import label_device
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -27,7 +28,7 @@ class BinaryModel(Manager):
     def prepare_true_class(self, current_device_name):
         true_class = []
         for session in self.device_sessions[current_device_name]:
-            labeled_df = self.data_prep.label_device(session, 1)
+            labeled_df = label_device(session, 1)
             true_class.append(labeled_df)
         return true_class
 
@@ -60,7 +61,7 @@ class BinaryModel(Manager):
             session = self.fast_extractor.extract_features(str(pcap_path))
             if session.empty:
                 continue
-            session = self.data_prep.label_device(session, 1)
+            session = label_device(session, 1)
             true_class.append(session)
 
         false_class = self.sample_false_class(device_name, len(true_class))
