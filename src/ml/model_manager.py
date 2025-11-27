@@ -10,6 +10,8 @@ from src.features.fast_extraction import FastExtractionPipeline
 from src.services.cache import Cache
 import random
 from abc import ABC, abstractmethod
+from scapy.packet import Packet
+from typing import Union, List
 
 class Manager(ABC):
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
@@ -142,7 +144,7 @@ class Manager(ABC):
         return self.model_arr
     
     @abstractmethod
-    def predict(self, pcap_file):
+    def predict(self, packets: Union[List[Packet], str]):
         pass
 
         

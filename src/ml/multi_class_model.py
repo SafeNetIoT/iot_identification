@@ -1,6 +1,8 @@
 from src.ml.model_manager import Manager
 from src.ml.model_record import ModelRecord
 import pandas as pd
+from typing import Union, List
+from scapy.packet import Packet
 
 
 class MultiClassModel(Manager):
@@ -19,10 +21,10 @@ class MultiClassModel(Manager):
         self.train_all()
         self.save_all(save_input_data=True)
 
-    def predict(self, pcap_file):
+    def predict(self, packets: Union[List[Packet], str]):
         self.load_model()
         model = self.model_arr[0]
-        df = self.fast_extractor.extract_features(pcap_file)
+        df = self.fast_extractor.extract_features(packets)
         if df.empty:
             return None
         df_scaled = pd.DataFrame(model.scaler.transform(df), columns=df.columns)

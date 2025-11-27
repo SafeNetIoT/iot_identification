@@ -5,6 +5,8 @@ import random
 from src.utils.exceptions import ModelStateError
 from pandas.errors import EmptyDataError
 from config import settings
+from typing import Union, List
+from scapy.packet import Packet
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -70,12 +72,12 @@ class BinaryModel(Manager):
         self.train_classifier(record, show_curve=True)
         self.save_classifier(record)
 
-    def predict(self, pcap_file):
+    def predict(self, packets: Union[List[Packet], str]):
         if self.loading_directory is not None:
             self.load_model()
         if not self.model_arr:
             raise ModelStateError("Model array has not been trained or loaded")
-        X = self.fast_extractor.extract_features(pcap_file)
+        X = self.fast_extractor.extract_features(packets)
         if X.empty:
             raise EmptyDataError("PCAP file is empty")
         result_class, score = None, 0
