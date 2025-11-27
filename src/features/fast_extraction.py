@@ -5,7 +5,7 @@ import pandas as pd
 from config import settings
 import os
 from pathlib import Path
-from src.utils.file_utils import label_device
+from src.utils.data_utils import label_device
 from src.features.session_registry import SessionRegistry
 from src.features.pcap_reader_factory import PcapReaderFactory
 

@@ -5,7 +5,7 @@ from collections import defaultdict, Counter
 import json
 from src.features.fast_extraction import FastExtractionPipeline
 from src.ml.dataset_preparation import DatasetPreparation as prep
-from src.utils.file_utils import label_device, clean_up
+from src.utils.data_utils import label_device, clean_up
 from copy import deepcopy
 from src.services.data_store import DataStoreFactory
 from src.services.redis_cache import RedisCache
