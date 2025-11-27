@@ -72,6 +72,7 @@ class BinaryModel(Manager):
         self.records.append(record)
         self.train_classifier(record, show_curve=True)
         self.save_classifier(record)
+        self.save_evaluation_to_json()
 
     def predict(self, packets: Union[List[Packet], str]):
         if self.loading_directory is not None:
@@ -95,8 +96,9 @@ def main():
     # manager.slow_train()
 
     manager = BinaryModel(output_directory="models/2025-11-27/binary_model", loading_dir="models/2025-11-27/binary_model")
+    manager.load_model()
     manager.set_cache()
-    manager.add_device("alexa_swan_kettle3", "data/raw/alexa_swan_kettle/")
+    manager.add_device("alexa_swan_kettle2", "data/raw/alexa_swan_kettle/")
 
 if __name__ == "__main__":
     main()
