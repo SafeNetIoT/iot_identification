@@ -1,0 +1,88 @@
+name: Upload Model Artifact on Push
+
+on:
+  push:
+    branches:
+      - "*"
+      - "*/*"
+
+jobs:
+  upload-model:
+    runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Determine branch and sanitize
+        id: branch
+        run: |
+          RAW_BRANCH="${{ github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | sed 's|/|-|g')
+          echo "raw=$RAW_BRANCH" >> $GITHUB_OUTPUT
+          echo "safe=$SAFE_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Locate model directory
+        id: model
+        run: |
+          MODEL_DIR=$(python - <<EOF
+          from config import settings
+          print(settings.model_under_test)
+          EOF
+          )
+          echo "dir=$MODEL_DIR" >> $GITHUB_OUTPUT
+
+      - name: Compute model checksum
+        id: checksum
+        run: |
+          CHECKSUM=$(tar -cf - "${{ steps.model.outputs.dir }}" | sha256sum | awk '{print $1}')
+          echo "value=$CHECKSUM" >> $GITHUB_OUTPUT
+
+      - name: Restore previous checksum
+        id: restore
+        uses: actions/cache@v4
+        with:
+          path: stored_checksum
+          key: model-${{ steps.branch.outputs.safe }}-${{ steps.checksum.outputs.value }}
+          restore-keys: |
+            model-${{ steps.branch.outputs.safe }}
+
+      - name: Skip if model unchanged
+        if: ${{ steps.restore.cache-hit == 'true' }}
+        run: echo "Model unchanged — skipping upload."
+
+      - name: Create model archive
+        if: ${{ steps.restore.cache-hit != 'true' }}
+        run: |
+          tar -czf model-${{ steps.branch.outputs.safe }}.tar.gz -C "${{ steps.model.outputs.dir }}" .
+
+      - name: Ensure release exists
+        if: ${{ steps.restore.cache-hit != 'true' }}
+        run: |
+          if ! gh release view "${{ steps.branch.outputs.safe }}" &>/dev/null; then
+            gh release create "${{ steps.branch.outputs.safe }}" \
+              --title "Model for ${{ steps.branch.outputs.raw }}" \
+              --notes "Auto-uploaded model for branch ${{ steps.branch.outputs.raw }}"
+          fi
+
+      - name: Upload model to release
+        if: ${{ steps.restore.cache-hit != 'true' }}
+        run: |
+          gh release upload "${{ steps.branch.outputs.safe }}" \
+            "model-${{ steps.branch.outputs.safe }}.tar.gz" \
+            --clobber
+
+      - name: Save checksum
+        if: ${{ steps.restore.cache-hit != 'true' }}
+        run: echo "saved" > stored_checksum
