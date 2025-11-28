@@ -9,9 +9,11 @@ jobs:
   prepare-model:
     name: Prepare model artifact
     runs-on: ubuntu-latest
+
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PROJECT_ROOT: ${{ github.workspace }}
+
     defaults:
       run:
         working-directory: ${{ github.workspace }}
@@ -41,10 +43,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          RAW_BRANCH="${{ github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | sed 's|/|-|g')
+
+          echo "Raw branch: $RAW_BRANCH"
+          echo "Sanitized branch: $SAFE_BRANCH"
+
           mkdir -p ${{ runner.temp }}/model
-          gh release download latest --pattern "*.tar.gz" --dir ${{ runner.temp }}/model
-          echo "Extracting model archive..."
-          tar -xzf ${{ runner.temp }}/model/*.tar.gz -C ${{ runner.temp }}/model
+
+          echo "Attempting to download model-${SAFE_BRANCH}.tar.gz ..."
+          gh release download "$RAW_BRANCH" \
+              --pattern "model-${SAFE_BRANCH}.tar.gz" \
+              --dir ${{ runner.temp }}/model
+
+          echo "Extracting archive..."
+          tar -xzf ${{ runner.temp }}/model/model-${SAFE_BRANCH}.tar.gz -C ${{ runner.temp }}/model
 
       - name: Stage model under test
         run: |
@@ -57,7 +70,6 @@ jobs:
         with:
           name: model-under-test
           path: model_output
-
 
   test:
     name: Run tests with model

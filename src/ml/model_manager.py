@@ -83,7 +83,7 @@ class Manager(ABC):
         os.makedirs(current_model_dir)
         self.model_directory = current_model_dir
 
-    def save_evaluation(self, record: ModelRecord): # rename
+    def update_evaluation(self, record: ModelRecord): # rename
         name = record.name
         train_acc, test_acc, report, conf_matrix = record.evaluation.values()
         self.evaluation[name] = name
@@ -93,26 +93,15 @@ class Manager(ABC):
             "report": report,
             "confusion_matrix": json.dumps(conf_matrix.tolist())
         }
-        # with open(f"{self.model_directory}/z_evaluation.txt", 'a') as file:
-        #     file.write(f"\n=== {name} ===\n")
-        #     file.write(f"train accuracy: {train_acc}\n")
-        #     file.write(f"test accuracy: {test_acc}\n")
-        #     file.write(f"report:\n{report}\n")
-        #     file.write(f"confusion_matrix:\n{conf_matrix}")
-        #     file.write("\n")
         return train_acc, test_acc
 
-    def save_average_accuracies(self):
+    def update_average_accuracies(self):
         avg_train_acc = self.total_train_acc / len(self.records)
         avg_test_acc = self.total_test_acc / len(self.records)
         self.evaluation["average_accuracies"] = {
             "avg_train_acc": round(avg_train_acc, 4),
             "avg_test_acc": round(avg_test_acc, 4)
         }
-        # with open(f"{self.model_directory}/z_evaluation.txt", 'a') as file:
-        #     file.write("\n=== Average Accuracies ===\n")
-        #     file.write(f"Average Train Accuracy: {avg_train_acc:.4f}\n")
-        #     file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
 
     def save_classifier(self, record, save_input_data = False):
         if self.model_directory is None:
@@ -120,11 +109,9 @@ class Manager(ABC):
         model = record.model
         name = record.name
         joblib.dump(model, f"{self.model_directory}/{name}.pkl")
-        train_acc, test_acc = self.save_evaluation(record)
-        print("initial acc:", self.total_train_acc, self.total_test_acc)
+        train_acc, test_acc = self.update_evaluation(record)
         self.total_train_acc += train_acc
         self.total_test_acc += test_acc
-        print("updated acc:", self.total_train_acc, self.total_test_acc)
         if save_input_data:
             model.X_test.to_csv(f"{self.model_directory}/input.csv")
             model.y_test.to_csv(f"{self.model_directory}/output.csv")
@@ -146,7 +133,7 @@ class Manager(ABC):
             name = record.name
             joblib.dump(model, f"{self.model_directory}/{name}.pkl")
             print(f"saved {model} to {self.model_directory}/{name}.pkl")
-            train_acc, test_acc = self.save_evaluation(record)
+            train_acc, test_acc = self.update_evaluation(record)
             self.total_train_acc += train_acc
             self.total_test_acc += test_acc
             if save_input_data:
@@ -155,7 +142,7 @@ class Manager(ABC):
             if model.cv_results is not None:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
         if len(self.records) > 1:
-            self.save_average_accuracies()
+            self.update_average_accuracies()
         self.save_evaluation_to_json()
 
     def load_model(self):
