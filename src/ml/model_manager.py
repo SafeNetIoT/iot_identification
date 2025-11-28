@@ -132,6 +132,8 @@ class Manager(ABC):
             model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
 
     def save_evaluation_to_json(self):
+        if self.model_directory is None:
+            self.create_model_directory()
         with open(f"{self.model_directory}/z_evaluation.json", 'w') as file:
             json.dump(self.evaluation, file, indent=2)
 

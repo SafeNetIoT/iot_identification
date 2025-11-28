@@ -4,7 +4,7 @@ from src.ml.binary_model import BinaryModel
 from src.ml.multi_class_model import MultiClassModel
 from sklearn.ensemble import RandomForestClassifier
 from config import settings
-import os
+from src.utils.data_utils import label_device
 
 @pytest.fixture
 def fake_device_sessions():
@@ -15,18 +15,10 @@ def fake_device_sessions():
     }
 
 @pytest.fixture
-def fake_data_prep():
-    """Mocks the data prep component with a predictable labeling function."""
-    mock = MagicMock()
-    mock.label_device.side_effect = lambda s, l: f"labeled_{s}"
-    return mock
-
-@pytest.fixture
 def binary_model():
     """Creates a BinaryModel with mocked dependencies and a temp output dir."""
     model = BinaryModel()
     model.fast_extractor = MagicMock()
-    model.data_prep = MagicMock()
     model.sample_false_class = MagicMock(return_value=["fake_false"])
     model.train_classifier = MagicMock()
     model.save_classifier = MagicMock()
