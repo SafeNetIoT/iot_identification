@@ -1,7 +1,7 @@
 from config import settings
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from src.utils.file_utils import unpack_features
+from src.utils.data_utils import unpack_features
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from sklearn.model_selection import RandomizedSearchCV, learning_curve

@@ -14,3 +14,4 @@ pydantic-settings
 redis
 redis[hiredis]
 python-dotenv
+dvc

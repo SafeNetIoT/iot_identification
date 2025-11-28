@@ -9,9 +9,11 @@ jobs:
   prepare-model:
     name: Prepare model artifact
     runs-on: ubuntu-latest
+
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PROJECT_ROOT: ${{ github.workspace }}
+
     defaults:
       run:
         working-directory: ${{ github.workspace }}
@@ -41,10 +43,38 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p ${{ runner.temp }}/model
-          gh release download latest --pattern "*.tar.gz" --dir ${{ runner.temp }}/model
-          echo "Extracting model archive..."
-          tar -xzf ${{ runner.temp }}/model/*.tar.gz -C ${{ runner.temp }}/model
+          RAW_BRANCH="${{ github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | sed 's|/|-|g')
+
+          echo "Raw branch: $RAW_BRANCH"
+          echo "Sanitized branch: $SAFE_BRANCH"
+
+          MODEL_DIR="${{ runner.temp }}/model"
+          mkdir -p "$MODEL_DIR"
+
+          ASSET_NAME="model-${SAFE_BRANCH}.tar.gz"
+          FALLBACK_ASSET="model-main.tar.gz"
+
+          echo "Attempting to download branch-specific model: $ASSET_NAME"
+
+          # Try branch-specific release
+          set +e
+          gh release download "$SAFE_BRANCH" \
+            --pattern "$ASSET_NAME" \
+            --dir "$MODEL_DIR"
+          STATUS=$?
+          set -e
+
+          if [ $STATUS -ne 0 ]; then
+            echo "Branch-specific model not found, falling back to main..."
+            gh release download "main" \
+              --pattern "$FALLBACK_ASSET" \
+              --dir "$MODEL_DIR"
+            ASSET_NAME="$FALLBACK_ASSET"
+          fi
+
+          echo "Extracting: $ASSET_NAME"
+          tar -xzf "$MODEL_DIR/$ASSET_NAME" -C "$MODEL_DIR"
 
       - name: Stage model under test
         run: |
@@ -57,7 +87,6 @@ jobs:
         with:
           name: model-under-test
           path: model_output
-
 
   test:
     name: Run tests with model

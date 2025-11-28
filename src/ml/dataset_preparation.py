@@ -11,11 +11,6 @@ class DatasetPreparation:
         self.feature_set = set(self.features)
         self.output = pd.DataFrame(columns=self.features + ['label'])
 
-    def prune_features(self, device_df):
-        keep_cols = [col for col in device_df.columns if col in self.feature_set]
-        device = device_df[keep_cols].copy()
-        return device
-
     @staticmethod
     def label_device(device_df, device_label):
         return device_df.assign(label=device_label)
@@ -33,9 +28,3 @@ class DatasetPreparation:
         if len(df) < before_rows:
             print(f"Warning: Dropped {before_rows - len(df)} rows with invalid or missing values.")
         return df
-
-    def prepare_df(self, device_df, label):
-        """Function only useful if processing intermediate data in /preprocess directory"""
-        pruned_df = self.prune_features(device_df)
-        labeled_df = self.label_device(pruned_df, label)
-        return self.clean_up(labeled_df)

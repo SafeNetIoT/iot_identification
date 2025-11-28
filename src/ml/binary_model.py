@@ -5,6 +5,9 @@ import random
 from src.utils.exceptions import ModelStateError
 from pandas.errors import EmptyDataError
 from config import settings
+from typing import Union, List
+from scapy.packet import Packet
+from src.utils.data_utils import label_device
 
 class BinaryModel(Manager):
     """Trains one binary classifier per device (device vs all others)."""
@@ -25,7 +28,7 @@ class BinaryModel(Manager):
     def prepare_true_class(self, current_device_name):
         true_class = []
         for session in self.device_sessions[current_device_name]:
-            labeled_df = self.data_prep.label_device(session, 1)
+            labeled_df = label_device(session, 1)
             true_class.append(labeled_df)
         return true_class
 
@@ -58,7 +61,7 @@ class BinaryModel(Manager):
             session = self.fast_extractor.extract_features(str(pcap_path))
             if session.empty:
                 continue
-            session = self.data_prep.label_device(session, 1)
+            session = label_device(session, 1)
             true_class.append(session)
 
         false_class = self.sample_false_class(device_name, len(true_class))
@@ -69,13 +72,14 @@ class BinaryModel(Manager):
         self.records.append(record)
         self.train_classifier(record, show_curve=True)
         self.save_classifier(record)
+        self.save_evaluation_to_json()
 
-    def predict(self, pcap_file):
+    def predict(self, packets: Union[List[Packet], str]):
         if self.loading_directory is not None:
             self.load_model()
         if not self.model_arr:
             raise ModelStateError("Model array has not been trained or loaded")
-        X = self.fast_extractor.extract_features(pcap_file)
+        X = self.fast_extractor.extract_features(packets)
         if X.empty:
             raise EmptyDataError("PCAP file is empty")
         result_class, score = None, 0
@@ -89,14 +93,12 @@ class BinaryModel(Manager):
 
 def main():
     # manager = BinaryModel()
-    # manager.add_device("alexa2", "data/raw/alexa_swan_kettle")
+    # manager.slow_train()
 
-    manager = BinaryModel()
-    manager.slow_train()
-
-    # manager = BinaryModel(output_directory="models/2025-10-21/binary_model2")
-    # manager.predict("data/raw/alexa_swan_kettle/2023-10-19/2023-10-19_00:31:44.397s.pcap")
-
+    manager = BinaryModel(output_directory="models/2025-11-27/binary_model", loading_dir="models/2025-11-27/binary_model")
+    manager.load_model()
+    manager.set_cache()
+    manager.add_device("alexa_swan_kettle2", "data/raw/alexa_swan_kettle/")
 
 if __name__ == "__main__":
     main()

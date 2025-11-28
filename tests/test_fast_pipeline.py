@@ -19,13 +19,9 @@ def test_add_device_creates_record(binary_model, tmp_path):
     df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
     binary_model.fast_extractor.extract_features.side_effect = [df1, df2]
 
-    # Mock label_device to add a 'label' column
-    binary_model.data_prep.label_device.side_effect = lambda df, lbl: df.assign(label=lbl)
-
     binary_model.add_device(device_name, device_dir)
 
     assert binary_model.fast_extractor.extract_features.call_count == 2
-    assert binary_model.data_prep.label_device.call_count == 2
 
     binary_model.sample_false_class.assert_called_once_with(device_name, 2)
 

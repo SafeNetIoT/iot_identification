@@ -2,11 +2,12 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sklearn.ensemble import RandomForestClassifier
 import joblib 
-import os
+import pandas as pd
 from conftest import DummyModel
 from datetime import datetime
-from tests.helpers import _run_unseen_evaluation
+import numpy as np
 from config import settings
+from tests.helpers import _run_unseen_evaluation 
 
 @pytest.mark.integration
 def test_slow_pipeline(binary_model, tmp_path):
@@ -18,12 +19,10 @@ def test_slow_pipeline(binary_model, tmp_path):
     """
     binary_model.output_directory = tmp_path
     binary_model.device_sessions = {
-        "deviceA": ["sessionA1", "sessionA2"],
-        "deviceB": ["sessionB1"],
-        "deviceC": ["sessionC1"],
+        "deviceA": [pd.DataFrame({"a": [1]}), pd.DataFrame({"a": [2]})],
+        "deviceB": [pd.DataFrame({"a": [3]})],
+        "deviceC": [pd.DataFrame({"a": [4]})],
     }
-    binary_model.data_prep = MagicMock()
-    binary_model.data_prep.label_device.side_effect = lambda s, l: f"labeled_{s}"
     binary_model.sample_false_class = MagicMock(return_value=["fake_false"])
     binary_model.records = []
 
@@ -33,7 +32,7 @@ def test_slow_pipeline(binary_model, tmp_path):
             "train_acc": 1.0,
             "test_acc": 1.0,
             "report": "OK",
-            "conf_matrix": [[1]],
+            "conf_matrix": np.array([[1]]),
         }
 
     binary_model.train_classifier = fake_train
@@ -61,7 +60,7 @@ def test_slow_pipeline(binary_model, tmp_path):
     )
 
     # check evaluation file
-    eval_file = model_dir / "z_evaluation.txt"
+    eval_file = model_dir / "z_evaluation.json"
     assert eval_file.exists(), f"{eval_file} not found"
     text = eval_file.read_text()
     for name in binary_model.device_sessions.keys():

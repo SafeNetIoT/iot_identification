@@ -1,9 +1,5 @@
 import pytest
-from src.features.fast_extraction import FastExtractionPipeline
-from src.ml.binary_model import BinaryModel
-from tests.helpers import get_mac_address_map
 import os
-from pathlib import Path
 from config import settings
 from pandas.errors import EmptyDataError
 

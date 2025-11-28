@@ -1,7 +1,6 @@
 import os
 from src.ml.base_model import BaseModel
 from config import settings
-from src.ml.dataset_preparation import DatasetPreparation
 from typing import List
 from datetime import datetime
 import joblib
@@ -10,22 +9,28 @@ from src.features.fast_extraction import FastExtractionPipeline
 from src.services.cache import Cache
 import random
 from abc import ABC, abstractmethod
+from scapy.packet import Packet
+from typing import Union, List
+import json
 
 class Manager(ABC):
     def __init__(self, architecture_name="standard_forest", manager_name="random_forest", output_directory=None, loading_directory=None):
         self.architecture = settings.model_architectures[architecture_name]
-        self.data_prep = DatasetPreparation()
         self.records: List[ModelRecord] = []
-        self.random_state = settings.random_state          
-        self.output_directory = output_directory if output_directory is not None else settings.models_directory
+        self.random_state = settings.random_state
+        if output_directory is not None:
+            self.output_directory = self.model_directory = output_directory
+        else:
+            self.model_directory = None
+            self.output_directory = settings.models_directory
         self.loading_directory = loading_directory
         self.total_train_acc, self.total_test_acc = 0, 0
         self.manager_name = manager_name
         self.fast_extractor = FastExtractionPipeline()
-        self.model_directory = None
         random.seed(self.random_state)
         self.cache = Cache()
         self.model_arr = []
+        self.evaluation = {}
 
     def set_cache(self, cache = None):
         if cache is not None:
@@ -78,25 +83,25 @@ class Manager(ABC):
         os.makedirs(current_model_dir)
         self.model_directory = current_model_dir
 
-    def save_evaluation(self, record: ModelRecord):
+    def update_evaluation(self, record: ModelRecord): # rename
         name = record.name
         train_acc, test_acc, report, conf_matrix = record.evaluation.values()
-        with open(f"{self.model_directory}/z_evaluation.txt", 'a') as file:
-            file.write(f"\n=== {name} ===\n")
-            file.write(f"train accuracy: {train_acc}\n")
-            file.write(f"test accuracy: {test_acc}\n")
-            file.write(f"report:\n{report}\n")
-            file.write(f"confusion_matrix:\n{conf_matrix}")
-            file.write("\n")
+        self.evaluation[name] = name
+        self.evaluation[name] = {
+            "train_acc": train_acc,
+            "test_acc": test_acc,
+            "report": report,
+            "confusion_matrix": json.dumps(conf_matrix.tolist())
+        }
         return train_acc, test_acc
 
-    def save_average_accuracies(self):
+    def update_average_accuracies(self):
         avg_train_acc = self.total_train_acc / len(self.records)
         avg_test_acc = self.total_test_acc / len(self.records)
-        with open(f"{self.model_directory}/z_evaluation.txt", 'a') as file:
-            file.write("\n=== Average Accuracies ===\n")
-            file.write(f"Average Train Accuracy: {avg_train_acc:.4f}\n")
-            file.write(f"Average Test Accuracy: {avg_test_acc:.4f}\n")
+        self.evaluation["average_accuracies"] = {
+            "avg_train_acc": round(avg_train_acc, 4),
+            "avg_test_acc": round(avg_test_acc, 4)
+        }
 
     def save_classifier(self, record, save_input_data = False):
         if self.model_directory is None:
@@ -104,7 +109,7 @@ class Manager(ABC):
         model = record.model
         name = record.name
         joblib.dump(model, f"{self.model_directory}/{name}.pkl")
-        train_acc, test_acc = self.save_evaluation(record)
+        train_acc, test_acc = self.update_evaluation(record)
         self.total_train_acc += train_acc
         self.total_test_acc += test_acc
         if save_input_data:
@@ -112,6 +117,12 @@ class Manager(ABC):
             model.y_test.to_csv(f"{self.model_directory}/output.csv")
         if model.cv_results is not None:
             model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
+
+    def save_evaluation_to_json(self):
+        if self.model_directory is None:
+            self.create_model_directory()
+        with open(f"{self.model_directory}/z_evaluation.json", 'w') as file:
+            json.dump(self.evaluation, file, indent=2)
 
     def save_all(self, save_input_data = False):
         if os.path.isfile(self.output_directory):
@@ -122,7 +133,7 @@ class Manager(ABC):
             name = record.name
             joblib.dump(model, f"{self.model_directory}/{name}.pkl")
             print(f"saved {model} to {self.model_directory}/{name}.pkl")
-            train_acc, test_acc = self.save_evaluation(record)
+            train_acc, test_acc = self.update_evaluation(record)
             self.total_train_acc += train_acc
             self.total_test_acc += test_acc
             if save_input_data:
@@ -131,18 +142,28 @@ class Manager(ABC):
             if model.cv_results is not None:
                 model.cv_results.to_csv(f"{self.model_directory}/cross_validation.csv")
         if len(self.records) > 1:
-            self.save_average_accuracies()
+            self.update_average_accuracies()
+        self.save_evaluation_to_json()
 
     def load_model(self):
+        print("::notice:: loading dir:", self.loading_directory)
         if self.loading_directory is None: 
             raise ValueError("Loading directory has not been specified")
         if not os.path.exists(self.loading_directory):
             raise FileNotFoundError("Model has to be saved before it is loaded")
         self.model_arr = [joblib.load(f"{self.loading_directory}/{file}") for file in os.listdir(self.loading_directory) if file.endswith(".pkl")]
+        self.evaluation = json.load(open(f"{self.loading_directory}/z_evaluation.json", 'r'))
+        num_devices = len(self.evaluation) - 1
+        average_accuries = self.evaluation.get("average_accuracies")
+        if average_accuries is not None:
+            self.total_train_acc = average_accuries.get("avg_train_acc", 0) * num_devices
+            self.total_test_acc = average_accuries.get("avg_test_acc", 0) * num_devices
+        else:
+            self.total_train_acc, self.total_test_acc = None, None
         return self.model_arr
     
     @abstractmethod
-    def predict(self, pcap_file):
+    def predict(self, packets: Union[List[Packet], str]):
         pass
 
         
