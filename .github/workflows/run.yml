@@ -49,17 +49,32 @@ jobs:
           echo "Raw branch: $RAW_BRANCH"
           echo "Sanitized branch: $SAFE_BRANCH"
 
-          mkdir -p ${{ runner.temp }}/model
+          MODEL_DIR="${{ runner.temp }}/model"
+          mkdir -p "$MODEL_DIR"
 
-          echo "Attempting to download model-${SAFE_BRANCH}.tar.gz ..."
-          gh release download "$RAW_BRANCH" \
-              --pattern "model-${SAFE_BRANCH}.tar.gz" \
-              --dir ${{ runner.temp }}/model
+          ASSET_NAME="model-${SAFE_BRANCH}.tar.gz"
+          FALLBACK_ASSET="model-main.tar.gz"
 
-          gh release download "main" --pattern "model-main.tar.gz"
+          echo "Attempting to download branch-specific model: $ASSET_NAME"
 
-          echo "Extracting archive..."
-          tar -xzf ${{ runner.temp }}/model/model-${SAFE_BRANCH}.tar.gz -C ${{ runner.temp }}/model
+          # Try branch-specific release
+          set +e
+          gh release download "$SAFE_BRANCH" \
+            --pattern "$ASSET_NAME" \
+            --dir "$MODEL_DIR"
+          STATUS=$?
+          set -e
+
+          if [ $STATUS -ne 0 ]; then
+            echo "Branch-specific model not found, falling back to main..."
+            gh release download "main" \
+              --pattern "$FALLBACK_ASSET" \
+              --dir "$MODEL_DIR"
+            ASSET_NAME="$FALLBACK_ASSET"
+          fi
+
+          echo "Extracting: $ASSET_NAME"
+          tar -xzf "$MODEL_DIR/$ASSET_NAME" -C "$MODEL_DIR"
 
       - name: Stage model under test
         run: |
