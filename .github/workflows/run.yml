@@ -43,18 +43,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH="${{ github.ref_name }}"
-          echo "Current branch: $BRANCH"
+          RAW_BRANCH="${{ github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | sed 's|/|-|g')
+
+          echo "Raw branch: $RAW_BRANCH"
+          echo "Sanitized branch: $SAFE_BRANCH"
 
           mkdir -p ${{ runner.temp }}/model
 
-          echo "Attempting to download model-${BRANCH}.tar.gz ..."
-          gh release download "$BRANCH" \
-              --pattern "model-${BRANCH}.tar.gz" \
+          echo "Attempting to download model-${SAFE_BRANCH}.tar.gz ..."
+          gh release download "$RAW_BRANCH" \
+              --pattern "model-${SAFE_BRANCH}.tar.gz" \
               --dir ${{ runner.temp }}/model
 
           echo "Extracting archive..."
-          tar -xzf ${{ runner.temp }}/model/model-${BRANCH}.tar.gz -C ${{ runner.temp }}/model
+          tar -xzf ${{ runner.temp }}/model/model-${SAFE_BRANCH}.tar.gz -C ${{ runner.temp }}/model
 
       - name: Stage model under test
         run: |
