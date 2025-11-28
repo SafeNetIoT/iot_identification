@@ -1,67 +1,60 @@
 #!/bin/bash
 set -e
 
-echo " Uploading Model Artifact"
+echo "=== Uploading Model Artifact ==="
 
-# Get repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "$REPO_ROOT" || exit 1
-
-# Load model path from config
-MODEL_DIR=$(python - <<EOF
+# Determine model directory
+MODEL_DIR=$(python - <<'EOF'
 from config import settings
 print(settings.model_under_test)
 EOF
 )
 
 if [ -z "$MODEL_DIR" ]; then
-  echo "Could not read settings.model_under_test"
+  echo "ERROR: model_under_test is empty in config."
   exit 1
 fi
-
-if [ ! -d "$MODEL_DIR" ]; then
-  echo "Model directory not found: $MODEL_DIR"
-  exit 1
-fi
-
-# Version = current git branch
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-# File name follows convention: model-<branch>.tar.gz
-ARCHIVE="model-${BRANCH}.tar.gz"
 
 echo "Model directory: $MODEL_DIR"
-echo "Branch: $BRANCH"
-echo "Archive: $ARCHIVE"
-echo ""
+
+# Get raw branch name
+RAW_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "Raw branch name: $RAW_BRANCH"
+
+# Sanitize branch for filenames (replace / with -)
+SAFE_BRANCH=$(echo "$RAW_BRANCH" | sed 's|/|-|g')
+echo "Sanitized branch: $SAFE_BRANCH"
+
+# TAR file name
+ARCHIVE="model-${SAFE_BRANCH}.tar.gz"
+echo "Archive name: $ARCHIVE"
+
+# Verify model dir
+if [ ! -d "$MODEL_DIR" ]; then
+  echo "ERROR: Model directory not found: $MODEL_DIR"
+  exit 1
+fi
 
 # Create archive
 echo "Creating TAR archive..."
 tar -czf "$ARCHIVE" -C "$MODEL_DIR" .
-echo "Created $ARCHIVE"
-echo ""
 
-# Ensure a release exists for this branch
-if ! gh release view "$BRANCH" &>/dev/null; then
-  echo "Creating GitHub Release for branch '$BRANCH'..."
-  gh release create "$BRANCH" --title "$BRANCH" --notes "Model artifacts for branch $BRANCH"
-else
-  echo "Release '$BRANCH' already exists."
+echo "Archive created: $(pwd)/$ARCHIVE"
+
+# Ensure the branch-specific GitHub release exists
+echo "Ensuring release \"$RAW_BRANCH\" exists..."
+if ! gh release view "$RAW_BRANCH" &>/dev/null; then
+  gh release create "$RAW_BRANCH" \
+    --title "Model for $RAW_BRANCH" \
+    --notes "Auto-uploaded model artifact for branch $RAW_BRANCH"
 fi
-echo ""
 
-# Upload the archive (overwrite if exists)
-echo "Uploading model to release '$BRANCH'..."
-gh release upload "$BRANCH" "$ARCHIVE" --clobber
-echo "Upload complete!"
-echo ""
+# Upload (replace any existing archive)
+echo "Uploading archive to GitHub Release..."
+gh release upload "$RAW_BRANCH" "$ARCHIVE" --clobber
 
-# Cleanup local archive
-echo "Removing local archive..."
+# Clean up local file
+echo "Cleaning up local archive..."
 rm "$ARCHIVE"
-echo "✔ Cleanup complete!"
-echo ""
 
-echo "Model upload finished successfully!"
-echo " Asset: model-${BRANCH}.tar.gz"
-echo " Release: $BRANCH"
+echo "=== Upload Complete ==="
