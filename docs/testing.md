@@ -47,15 +47,28 @@ This setup reflects a deliberate trade-off: favoring simplicity and speed over a
 
 ### CI Test Troubleshooting
 
-The CI system relies on a GitHub Release containing the model under test.
-During the workflow, CI automatically downloads this model and uses it during test execution.
+The CI pipeline tests each branch using a **model artifact** stored in GitHub Releases.  
+Because the model files are **local and git‑ignored**, CI cannot generate the model itself.
 
-Because of this dependency, changing the model under test (for example retraining or modifying the model directory) can occasionally cause CI failures—especially if the release artifact is missing or outdated.
+Whenever the model changes locally, you **must upload a new version**.
 
-Although the upload process normally runs automatically, you can manually refresh the model artifact at any time by running:
+---
 
-```bash
+## When You MUST Run `upload_model.sh`
+
+Run:
+
+```
 ./scripts/upload_model.sh
 ```
 
-This forces the model archive to be rebuilt and re-uploaded to the correct GitHub Release, which typically resolves CI-related issues.
+whenever:
+
+### 1. You retrain or change the model locally  
+The CI artifact becomes outdated otherwise.
+
+### 2. Before pushing a branch  
+Prevents CI from failing because the model archive is missing.
+
+### 3. Before opening or updating a pull request  
+Ensures CI tests use the correct model for your feature branch.

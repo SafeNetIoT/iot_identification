@@ -43,7 +43,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RAW_BRANCH="${{ github.ref_name }}"
+          echo "=== Determining correct model for CI ==="
+
+          # Correct branch resolution for both push and pull_request
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RAW_BRANCH="${{ github.event.pull_request.head.ref }}"
+            echo "Pull Request detected → using source branch: $RAW_BRANCH"
+          else
+            RAW_BRANCH="${{ github.ref_name }}"
+            echo "Regular push → using branch: $RAW_BRANCH"
+          fi
+
+          # Convert slashes to hyphens for release names
           SAFE_BRANCH=$(echo "$RAW_BRANCH" | sed 's|/|-|g')
 
           echo "Raw branch: $RAW_BRANCH"
@@ -55,9 +66,8 @@ jobs:
           ASSET_NAME="model-${SAFE_BRANCH}.tar.gz"
           FALLBACK_ASSET="model-main.tar.gz"
 
-          echo "Attempting to download branch-specific model: $ASSET_NAME"
+          echo "Attempting to download branch-specific model asset: $ASSET_NAME"
 
-          # Try branch-specific release
           set +e
           gh release download "$SAFE_BRANCH" \
             --pattern "$ASSET_NAME" \
@@ -66,14 +76,16 @@ jobs:
           set -e
 
           if [ $STATUS -ne 0 ]; then
-            echo "Branch-specific model not found, falling back to main..."
+            echo "Branch-specific model not found. Falling back to: $FALLBACK_ASSET"
             gh release download "main" \
               --pattern "$FALLBACK_ASSET" \
               --dir "$MODEL_DIR"
             ASSET_NAME="$FALLBACK_ASSET"
+          else
+            echo "Found branch-specific model."
           fi
 
-          echo "Extracting: $ASSET_NAME"
+          echo "Extracting model archive: $ASSET_NAME"
           tar -xzf "$MODEL_DIR/$ASSET_NAME" -C "$MODEL_DIR"
 
       - name: Stage model under test
@@ -91,7 +103,7 @@ jobs:
   test:
     name: Run tests with model
     runs-on: ubuntu-latest
-    needs: prepare-model  # ensures model is ready before testing
+    needs: prepare-model
 
     services:
       redis:
@@ -141,9 +153,8 @@ jobs:
 
       - name: Inspect session cache contents
         run: |
-          echo "Contents of session_cache/:"
-          ls -R session_cache/ || echo "session_cache/ missing or empty"
-          echo "Disk usage:"
+          echo "=== Session Cache Contents ==="
+          ls -R session_cache/ || echo "session_cache/ missing"
           du -sh session_cache/ || true
 
       - name: Fetch DNS dataset

@@ -19,6 +19,7 @@ echo "Model directory: $MODEL_DIR"
 
 # Get raw branch name
 RAW_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+RAW_BRANCH="${RAW_BRANCH#heads/}"
 echo "Raw branch name: $RAW_BRANCH"
 
 # Sanitize branch for filenames (replace / with -)
@@ -42,16 +43,16 @@ tar -czf "$ARCHIVE" -C "$MODEL_DIR" .
 echo "Archive created: $(pwd)/$ARCHIVE"
 
 # Ensure the branch-specific GitHub release exists
-echo "Ensuring release \"$RAW_BRANCH\" exists..."
-if ! gh release view "$RAW_BRANCH" &>/dev/null; then
-  gh release create "$RAW_BRANCH" \
+if ! gh release view "$SAFE_BRANCH" &>/dev/null; then
+  gh release create "$SAFE_BRANCH" \
     --title "Model for $RAW_BRANCH" \
-    --notes "Auto-uploaded model artifact for branch $RAW_BRANCH"
+    --notes "Auto-uploaded model artifact for branch $RAW_BRANCH" \
+    --target "$RAW_BRANCH"
 fi
 
 # Upload (replace any existing archive)
 echo "Uploading archive to GitHub Release..."
-gh release upload "$RAW_BRANCH" "$ARCHIVE" --clobber
+gh release upload "$SAFE_BRANCH" "$ARCHIVE" --clobber
 
 # Clean up local file
 echo "Cleaning up local archive..."
