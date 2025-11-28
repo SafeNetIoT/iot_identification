@@ -7,56 +7,67 @@ on:
 
 jobs:
   prepare-model:
-    name: Prepare model artifact
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PROJECT_ROOT: ${{ github.workspace }}
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
+  name: Prepare model artifact
+  runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    PROJECT_ROOT: ${{ github.workspace }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+  defaults:
+    run:
+      working-directory: ${{ github.workspace }}
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+  steps:
+    - uses: actions/checkout@v4
 
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      - name: Download model archive from GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p ${{ runner.temp }}/model
-          gh release download latest --pattern "*.tar.gz" --dir ${{ runner.temp }}/model
-          echo "Extracting model archive..."
-          tar -xzf ${{ runner.temp }}/model/*.tar.gz -C ${{ runner.temp }}/model
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
-      - name: Stage model under test
-        run: |
-          echo "Staging extracted model files..."
-          mkdir -p model_output
-          cp -r ${{ runner.temp }}/model/* model_output/
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Upload model artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-under-test
-          path: model_output
+    - name: Download model archive from GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        BRANCH="${{ github.ref_name }}"
+        echo "Current branch: $BRANCH"
+
+        mkdir -p ${{ runner.temp }}/model
+
+        echo "Attempting to download model-${BRANCH}.tar.gz ..."
+        gh release download "$BRANCH" \
+            --pattern "model-${BRANCH}.tar.gz" \
+            --dir ${{ runner.temp }}/model
+
+        echo "Extracting archive..."
+        tar -xzf ${{ runner.temp }}/model/model-${BRANCH}.tar.gz -C ${{ runner.temp }}/model
+
+    - name: Stage model under test
+      run: |
+        echo "Staging extracted model files..."
+        mkdir -p model_output
+        cp -r ${{ runner.temp }}/model/* model_output/
+
+    - name: Upload model artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: model-under-test
+        path: model_output
+
 
 
   test:
