@@ -146,6 +146,7 @@ class Manager(ABC):
         self.save_evaluation_to_json()
 
     def load_model(self):
+        print("::notice:: loading dir:", self.loading_directory)
         if self.loading_directory is None: 
             raise ValueError("Loading directory has not been specified")
         if not os.path.exists(self.loading_directory):
