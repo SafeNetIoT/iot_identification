@@ -23,4 +23,4 @@ ENV PROJECT_ROOT=/app
 # # RUN ./scripts/setup.sh
 
 # Default command (training script)
-CMD ["bash", "./scripts/train_model.sh"]
+CMD ["python", "-m", "src.ml.binary_model"]
