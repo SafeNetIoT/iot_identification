@@ -44,3 +44,18 @@ Currently, the workflow does not use the Docker image during testing. Running te
 
 This setup reflects a deliberate trade-off: favoring simplicity and speed over an exact match with the containerized environment. Still, integrating full Docker-based testing remains a valuable direction for future improvements.
 ---
+
+### CI Test Troubleshooting
+
+The CI system relies on a GitHub Release containing the model under test.
+During the workflow, CI automatically downloads this model and uses it during test execution.
+
+Because of this dependency, changing the model under test (for example retraining or modifying the model directory) can occasionally cause CI failures—especially if the release artifact is missing or outdated.
+
+Although the upload process normally runs automatically, you can manually refresh the model artifact at any time by running:
+
+```bash
+./scripts/upload_model.sh
+```
+
+This forces the model archive to be rebuilt and re-uploaded to the correct GitHub Release, which typically resolves CI-related issues.
