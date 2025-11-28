@@ -56,6 +56,8 @@ jobs:
               --pattern "model-${SAFE_BRANCH}.tar.gz" \
               --dir ${{ runner.temp }}/model
 
+          gh release download "main" --pattern "model-main.tar.gz"
+
           echo "Extracting archive..."
           tar -xzf ${{ runner.temp }}/model/model-${SAFE_BRANCH}.tar.gz -C ${{ runner.temp }}/model
 
