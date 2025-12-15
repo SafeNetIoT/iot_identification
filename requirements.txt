@@ -3,7 +3,7 @@ pandas
 scapy
 matplotlib
 PyYAML
-scikit-learn
+scikit-learn<1.4
 joblib
 imblearn
 pytest
