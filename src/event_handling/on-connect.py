@@ -9,6 +9,7 @@ import os
 import re
 import time
 import subprocess
+import sqlite3
 
 from src.event_handling.idenitify import identify
 
@@ -261,7 +262,6 @@ def main(dev_mac, dev_ip, dev_name,interface=None):
         print("Device interface: ",interface)
     
     #check if the device is already in the db
-    import sqlite3
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
     dev_exists, prev_identified = check_dev_in_db(cursor,dev_mac)
