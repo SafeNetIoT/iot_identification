@@ -9,6 +9,8 @@ import os
 import re
 import time
 import subprocess
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 
 from src.event_handling.idenitify import identify
 
@@ -261,57 +263,61 @@ def main(dev_mac, dev_ip, dev_name,interface=None):
         print("Device interface: ",interface)
     
     #check if the device is already in the db
-    import sqlite3
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
     dev_exists, prev_identified = check_dev_in_db(cursor,dev_mac)
+
+    future_identify = None
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        if not prev_identified:
+            future_identify = executor.submit(identify_device, dev_mac)
     
-    # if the device is not in the db, add it
-    if not dev_exists:
-        print("Device not in the db, adding it...")
-        # get the mac vendor
-        mac_vendor = get_mac_vendor(dev_mac)
-        dev_type = "loading_device"
-        # insert the device into the db
-        cursor.execute("INSERT INTO devices (mac, name, interface, dev_type, ip, dhcp_name, last_dhcp_date, mac_vendor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (dev_mac, dev_name, interface, dev_type, dev_ip, dev_name, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), mac_vendor))
-        conn.commit()
-        print(f"Device {dev_mac} added to the database.")
-        
-    # if dev is there, update ip, dhcp_name, last_dhcp_date
-    else:
-        cursor.execute("UPDATE devices SET interface=?, ip=?, dhcp_name=?, last_dhcp_date=? WHERE mac=?", (interface, dev_ip, dev_name, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), dev_mac))
-        conn.commit()
-        print(f"Device {dev_mac} updated in the database.")
+        # if the device is not in the db, add it
+        if not dev_exists:
+            print("Device not in the db, adding it...")
+            # get the mac vendor
+            mac_vendor = get_mac_vendor(dev_mac)
+            dev_type = "loading_device"
+            # insert the device into the db
+            cursor.execute("INSERT INTO devices (mac, name, interface, dev_type, ip, dhcp_name, last_dhcp_date, mac_vendor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (dev_mac, dev_name, interface, dev_type, dev_ip, dev_name, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), mac_vendor))
+            conn.commit()
+            print(f"Device {dev_mac} added to the database.")
+            
+        # if dev is there, update ip, dhcp_name, last_dhcp_date
+        else:
+            cursor.execute("UPDATE devices SET interface=?, ip=?, dhcp_name=?, last_dhcp_date=? WHERE mac=?", (interface, dev_ip, dev_name, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), dev_mac))
+            conn.commit()
+            print(f"Device {dev_mac} updated in the database.")
     
     
-    if not prev_identified:    
-        # perform device identification (this may take a while)
-        dev_type= identify_device(dev_mac)
-        
-        #check if dev_type is in the db
-        cursor.execute("SELECT dev_type_id FROM device_types WHERE dev_type_id=?", (dev_type,))
-        dev_type_exists = cursor.fetchone()
-        if not dev_type_exists:
-            dev_type = "unknown_device"
-        
-        # Generate a unique device name based on the device type and count of devices with the same type
-        cursor.execute("""
-            SELECT dt.type_name, COUNT(d.mac) 
-            FROM device_types dt 
-            LEFT JOIN devices d ON dt.dev_type_id = d.dev_type 
-            WHERE dt.dev_type_id = ?
-        """, (dev_type,))
-        dev_type_name, count = cursor.fetchone()
-        dev_name = f"{dev_type_name} ({count + 1})"
-        print("device name: ",dev_name)
-        
-        #update type in the db
-        cursor.execute("""
-            UPDATE devices 
-            SET dev_type=?,
-            name=?
-            WHERE mac=?
-        """, (dev_type, dev_name,dev_mac))
+        if not prev_identified:    
+            # perform device identification (this may take a while)
+            dev_type= future_identify.result()
+            
+            #check if dev_type is in the db
+            cursor.execute("SELECT dev_type_id FROM device_types WHERE dev_type_id=?", (dev_type,))
+            dev_type_exists = cursor.fetchone()
+            if not dev_type_exists:
+                dev_type = "unknown_device"
+            
+            # Generate a unique device name based on the device type and count of devices with the same type
+            cursor.execute("""
+                SELECT dt.type_name, COUNT(d.mac) 
+                FROM device_types dt 
+                LEFT JOIN devices d ON dt.dev_type_id = d.dev_type 
+                WHERE dt.dev_type_id = ?
+            """, (dev_type,))
+            dev_type_name, count = cursor.fetchone()
+            dev_name = f"{dev_type_name} ({count + 1})"
+            print("device name: ",dev_name)
+            
+            #update type in the db
+            cursor.execute("""
+                UPDATE devices 
+                SET dev_type=?,
+                name=?
+                WHERE mac=?
+            """, (dev_type, dev_name,dev_mac))
 
     conn.commit()
     # close the connection
